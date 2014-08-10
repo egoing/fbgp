@@ -29,16 +29,24 @@ JINJA_ENVIRONMENT = jinja2.Environment(
   extensions = ['jinja2.ext.autoescape'])
 
 class MainHandler(webapp2.RequestHandler):
+    global _config
     def get(self):
-    	graph = facebook.GraphAPI('CAACEdEose0cBAOhdepYMr1cSkhHwCQbZC2K7BEB2VaUfXusmg85zqOXVQ5Kgm5qC1BMkZAZCQB7nRxzMlXMr49IP0G9yv32vbvGl2xld8QLAAqWm0erMFHj9Ya7ez1X5iEfHL77Tkedm3YmO3IpGJoGIwpbkiqLKIJo8vP4iVGv6adb2WdDyBYTwFMZCKugqV0nXZBvoZCzCKv26OFUF2SPcnFowZCtTpUZD')
-        obj = graph.get_object("me")
-        logging.info(obj);
+    	#graph = facebook.GraphAPI('CAACEdEose0cBAOhdepYMr1cSkhHwCQbZC2K7BEB2VaUfXusmg85zqOXVQ5Kgm5qC1BMkZAZCQB7nRxzMlXMr49IP0G9yv32vbvGl2xld8QLAAqWm0erMFHj9Ya7ez1X5iEfHL77Tkedm3YmO3IpGJoGIwpbkiqLKIJo8vP4iVGv6adb2WdDyBYTwFMZCKugqV0nXZBvoZCzCKv26OFUF2SPcnFowZCtTpUZD')
+        #obj = graph.get_object("me")
+        #logging.info(obj);
         
-        #logging.info(group)
-        self.response.write('Hello world!')
         
-        template = JINJA_ENVIRONMENT.get_template('view/base.html');
-        self.response.out.write(template.render());
+        template = JINJA_ENVIRONMENT.get_template('view/base.html')
+
+        #, {'facebook_app_id':'870370012974635'});
+
+        self.response.out.write(template.render(dict(
+            facebook_app_id=870370012974635
+            #,
+            #current_user=self.current_user
+        )))
+
+        #self.response.out.write(template.render());
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler)
