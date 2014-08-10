@@ -101,7 +101,14 @@ class BaseHandler(webapp2.RequestHandler):
                     )
                     user.put()
                 elif user.access_token != cookie["access_token"]:
-                    user.access_token = cookie["access_token"]
+                    logging.info('Existing app user with new access token')
+                    # get long live token
+                    graph = facebook.GraphAPI(cookie["access_token"])
+                    token = graph.extend_access_token(app_id=FACEBOOK_APP_ID,app_secret=FACEBOOK_APP_SECRET)['access_token']
+                    graph.access_token = token
+                    # TODO how to update existing cookie, unless it is okay to keep extending
+                    # save user in objectstore
+                    user.access_token = token
                     user.put()
                 # User is now logged in
                 self.session["user"] = dict(
@@ -111,6 +118,7 @@ class BaseHandler(webapp2.RequestHandler):
                     access_token=user.access_token
                 )
                 return self.session.get("user")
+        logging.info("No user logged in.")
         return None
 
     def dispatch(self):
