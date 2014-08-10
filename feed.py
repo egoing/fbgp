@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding:utf-8 -*-
 #
 # Copyright 2010 Facebook
 #
@@ -27,17 +28,21 @@ A barebones AppEngine application that uses Facebook for login.
 5.  Change the application name in app.yaml.
 
 """
-FACEBOOK_APP_ID = "870370012974635"
-FACEBOOK_APP_SECRET = "21f3bd1e42cabeaa990eecb28dd98100"
-
 
 import facebook
 import webapp2
 import os
 import jinja2
 import urllib2
-
+from google.appengine.api import lib_config
 import logging
+
+import sys
+logging.getLogger().setLevel(logging.DEBUG)
+reload(sys)
+sys.setdefaultencoding('utf-8')
+
+_config = lib_config.register('main', {'FACEBOOK_ID':None, 'FACEBOOK_SECRECT':None})
 
 
 from google.appengine.ext import db
@@ -58,7 +63,7 @@ class User(db.Model):
 
 class BaseHandler(webapp2.RequestHandler):
 
-    logging.info("BaseHandler")
+    logging.info("BaseHandler 기본 핸들")
 
     """Provides access to the active Facebook user in self.current_user
     The property is lazy-loaded on first access, using the cookie saved
@@ -70,15 +75,15 @@ class BaseHandler(webapp2.RequestHandler):
     def current_user(self):
         if self.session.get("user"):
             # User is logged in
-            logging.info("User is logged in.")
+            logging.info("User is logged in. 사용자 로그인 ")
             return self.session.get("user")
         else:
             # Either used just logged in or just saw the first page
             # We'll see here
             logging.info("Check if user is logged in to Facebook.")
             cookie = facebook.get_user_from_cookie(self.request.cookies,
-                                                   FACEBOOK_APP_ID,
-                                                   FACEBOOK_APP_SECRET)
+                                                   _config.FACEBOOK_ID,
+                                                   _config.FACEBOOK_APP_SECRET)
             if cookie:
                 # Okay so user logged in.
                 # Now, check to see if existing user
@@ -137,7 +142,7 @@ class HomeHandler(BaseHandler):
         template = jinja_environment.get_template('view/example.html')
 
         self.response.out.write(template.render(dict(
-            facebook_app_id=FACEBOOK_APP_ID,
+            facebook_app_id=_config.FACEBOOK_ID,
             #current_user=self.current_user
         )))
 
