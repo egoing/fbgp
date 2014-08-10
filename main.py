@@ -22,8 +22,8 @@ import facebook
 import logging
 from google.appengine.api import lib_config
 
-_config = lib_config.register('main', {})
-print _config
+_config = lib_config.register('main', {'FACEBOOK_ID':None, 'FACEBOOK_SECRECT':None})
+
 JINJA_ENVIRONMENT = jinja2.Environment(
   loader = jinja2.FileSystemLoader(os.path.dirname(__file__)),
   extensions = ['jinja2.ext.autoescape'])
@@ -31,22 +31,12 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 class MainHandler(webapp2.RequestHandler):
     global _config
     def get(self):
-    	#graph = facebook.GraphAPI('CAACEdEose0cBAOhdepYMr1cSkhHwCQbZC2K7BEB2VaUfXusmg85zqOXVQ5Kgm5qC1BMkZAZCQB7nRxzMlXMr49IP0G9yv32vbvGl2xld8QLAAqWm0erMFHj9Ya7ez1X5iEfHL77Tkedm3YmO3IpGJoGIwpbkiqLKIJo8vP4iVGv6adb2WdDyBYTwFMZCKugqV0nXZBvoZCzCKv26OFUF2SPcnFowZCtTpUZD')
-        #obj = graph.get_object("me")
-        #logging.info(obj);
-        
-        
-        template = JINJA_ENVIRONMENT.get_template('view/base.html')
-
-        #, {'facebook_app_id':'870370012974635'});
-
+    	template = JINJA_ENVIRONMENT.get_template('view/base.html')
         self.response.out.write(template.render(dict(
-            facebook_app_id=870370012974635
+            facebook_app_id=_config.FACEBOOK_ID
             #,
             #current_user=self.current_user
         )))
-
-        #self.response.out.write(template.render());
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler)
