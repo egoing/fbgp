@@ -38,7 +38,6 @@ import jinja2
 import urllib2
 
 import logging
-logging.getLogger().setLevel(logging.DEBUG)
 
 
 from google.appengine.ext import db
@@ -58,8 +57,10 @@ class User(db.Model):
 
 
 class BaseHandler(webapp2.RequestHandler):
-    """Provides access to the active Facebook user in self.current_user
 
+    logging.info("BaseHandler")
+
+    """Provides access to the active Facebook user in self.current_user
     The property is lazy-loaded on first access, using the cookie saved
     by the Facebook JavaScript SDK to determine the user ID of the active
     user. See http://developers.facebook.com/docs/authentication/ for
@@ -69,10 +70,12 @@ class BaseHandler(webapp2.RequestHandler):
     def current_user(self):
         if self.session.get("user"):
             # User is logged in
+            logging.info("User is logged in.")
             return self.session.get("user")
         else:
             # Either used just logged in or just saw the first page
             # We'll see here
+            logging.info("Check if user is logged in to Facebook.")
             cookie = facebook.get_user_from_cookie(self.request.cookies,
                                                    FACEBOOK_APP_ID,
                                                    FACEBOOK_APP_SECRET)
@@ -133,7 +136,6 @@ class HomeHandler(BaseHandler):
     def get(self):
         template = jinja_environment.get_template('view/example.html')
 
-        
         self.response.out.write(template.render(dict(
             facebook_app_id=FACEBOOK_APP_ID,
             #current_user=self.current_user
