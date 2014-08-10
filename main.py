@@ -14,11 +14,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 import webapp2
+import jinja2, os
+import urllib2
+import facebook
+import logging
+from google.appengine.api import lib_config
+
+_config = lib_config.register('main', {})
+print _config
+JINJA_ENVIRONMENT = jinja2.Environment(
+  loader = jinja2.FileSystemLoader(os.path.dirname(__file__)),
+  extensions = ['jinja2.ext.autoescape'])
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
+    	graph = facebook.GraphAPI('CAACEdEose0cBAOhdepYMr1cSkhHwCQbZC2K7BEB2VaUfXusmg85zqOXVQ5Kgm5qC1BMkZAZCQB7nRxzMlXMr49IP0G9yv32vbvGl2xld8QLAAqWm0erMFHj9Ya7ez1X5iEfHL77Tkedm3YmO3IpGJoGIwpbkiqLKIJo8vP4iVGv6adb2WdDyBYTwFMZCKugqV0nXZBvoZCzCKv26OFUF2SPcnFowZCtTpUZD')
+        obj = graph.get_object("me")
+        logging.info(obj);
+        
+        #logging.info(group)
         self.response.write('Hello world!')
+        
+        template = JINJA_ENVIRONMENT.get_template('view/base.html');
+        self.response.out.write(template.render());
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler)
