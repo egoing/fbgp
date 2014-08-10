@@ -1,2 +1,0 @@
-main_FACEBOOK_ID = ''
-main_FACEBOOK_SECRECT = ''
