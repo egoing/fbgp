@@ -9,7 +9,7 @@ handlers:
   static_files: favicon.ico
   upload: favicon\.ico
 
-- url: /
+- url: /.*
   script: feed.app
 
 - url: /static
@@ -17,6 +17,11 @@ handlers:
 
 - url: /admin
   script: admin.app
+
+- url: /admin/.*
+  script: admin.app
+
+
 
 
 libraries:

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding:utf-8 -*-
 #
 # Copyright 2010 Facebook
 #
@@ -26,26 +27,10 @@ Using JavaScript is recommended if it is feasible for your application,
 as it handles some complex authentication states that can only be detected
 in client-side code.
 """
-import facebook
+
 import webapp2
-import os
-import jinja2
-import cookielib
-import urllib2
-
-import requests
-
-import datetime
-import facebook
 import jinja2
 import os
-import webapp2
-import urllib2
-from operator import itemgetter, attrgetter
-from webapp2_extras import json
-
-
-
 
 import base64
 import cgi
@@ -59,18 +44,17 @@ import time
 import urllib
 import wsgiref.handlers
 
+import json
 #from django.utils import simplejson as json
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 from google.appengine.ext.webapp import template
 
-import webapp2
-
-from google.appengine.ext import db
 from webapp2_extras import sessions
 
 from google.appengine.api import lib_config
+
 import logging
 
 import sys
@@ -80,6 +64,7 @@ sys.setdefaultencoding('utf-8')
 
 _config = lib_config.register('main', {'FACEBOOK_ID':None, 'FACEBOOK_SECRET':None})
 
+#페이스북 앱 정보
 
 FACEBOOK_APP_ID = _config.FACEBOOK_ID
 FACEBOOK_APP_SECRET = _config.FACEBOOK_SECRET
@@ -88,7 +73,7 @@ config = {}
 config['webapp2_extras.sessions'] = dict(secret_key='')
 
 
-
+# dao 모델 설정
 class User(db.Model):
     id = db.StringProperty(required=True)
     created = db.DateTimeProperty(auto_now_add=True)
@@ -97,11 +82,19 @@ class User(db.Model):
     profile_url = db.StringProperty(required=True)
     access_token = db.StringProperty(required=True)
 
+#템플릿 프레임워크 환경 설정
+
+JINJA_ENVIRONMENT = jinja2.Environment(
+  loader = jinja2.FileSystemLoader(os.path.dirname(__file__)),
+  extensions = ['jinja2.ext.autoescape'])
 
 class BaseHandler(webapp.RequestHandler):
     @property
     def current_user(self):
-        """Returns the logged in Facebook user, or None if unconnected."""
+        """Returns the logged in Facebook user, or None if unconnected.
+        페이스북 유저가 로그인되어 있으면 페이스북 객체를 리턴한고 그렇지 않은면 None를 리턴함
+        """
+        logging.info("순서 1")
         if not hasattr(self, "_current_user"):
             self._current_user = None
             user_id = parse_cookie(self.request.cookies.get("fb_user"))
@@ -111,21 +104,16 @@ class BaseHandler(webapp.RequestHandler):
 
 
 
-
+#메인 클래스
 class HomeHandler(BaseHandler):
     def get(self):
-        path = os.path.join(os.path.dirname(__file__), "view/oauth.html")
+        logging.info("순서 먼저 호")
         args = dict(current_user=self.current_user)
-        self.response.out.write(template.render(path, args))
-        #return
-        #logging.info(self.current_user)
-        #template = jinja_environment.get_template('view/oauth.html')
-        #self.response.out.write(template.render(dict(
-        #    current_user=self.current_user
-        #)))
-        #logging.info(3)
+        template = JINJA_ENVIRONMENT.get_template('/view/oauth.html')
+        self.response.write(template.render(args))
 
 
+#로그인 담당
 class LoginHandler(BaseHandler):
     def get(self):
         verification_code = self.request.get("code")
@@ -137,53 +125,24 @@ class LoginHandler(BaseHandler):
             response = cgi.parse_qs(urllib.urlopen(
                 "https://graph.facebook.com/oauth/access_token?" +
                 urllib.urlencode(args)).read())
+            #엑시스 토근을 요청
             access_token = response["access_token"][-1]
-            logging.info("access token")
-            logging.info(access_token)
-           
 
-            # Download the user profile and cache a local instance of the
+            # Download the user profile 사용자 프로파이일을 다운로드하고 
+            # and cache a local instance of the 로컬 DAO에 프로필정보를 담는다.
             # basic profile info
-   
-            logging.info("access_url")
+            profile = json.load(urllib.urlopen("https://graph.facebook.com/me?" + urllib.urlencode(dict(access_token=access_token))))
             
-            #access_url =  "https://graph.facebook.com/me?" + urllib.urlencode(dict(access_token=access_token))
-            access_url =  "https://graph.facebook.com/me?access_token="+access_token
-            
-            logging.info(access_url)
-
-            logging.info("debugging")
-            logging.info(1)
-
-            import json    
-            profile = json.load(urllib.urlopen(access_url))
-
-            logging.info(152)
-            self.response.write(profile["id"])
-            #return
-
+            logging.info("after call profile ")
             user = User(key_name=str(profile["id"]), id=str(profile["id"]),
                         name=profile["name"], access_token=access_token,
                         profile_url=profile["link"])
-            """         
-            profile = graph.get_object("me")
-            user = User(
-                        key_name=str(profile["id"]),
-                        id=str(profile["id"]),
-                        name=profile["name"],
-                        profile_url=profile["link"],
-                        access_token=token,
-            )
-"""
             user.put()
-            set_cookie(self.response, "fb_user", str(profile["id"]),
-                       expires=time.time() + 30 * 86400)
-
+            set_cookie(self.response, "fb_user", str(profile["id"]), expires=time.time() + 30 * 86400)
             self.redirect("/")
         else:
             self.redirect(
-                "https://graph.facebook.com/oauth/authorize?" +
-                urllib.urlencode(args))
+                "https://graph.facebook.com/oauth/authorize?" + urllib.urlencode(args))
 
 
 class LogoutHandler(BaseHandler):
@@ -193,7 +152,9 @@ class LogoutHandler(BaseHandler):
 
 
 def set_cookie(response, name, value, domain=None, path="/", expires=None):
-    """Generates and signs a cookie for the give name/value"""
+    """Generates and signs a cookie for the give name/value
+    승인된 쿠키를 생
+    """
     timestamp = str(int(time.time()))
     value = base64.b64encode(value)
     signature = cookie_signature(value, timestamp)
@@ -205,9 +166,18 @@ def set_cookie(response, name, value, domain=None, path="/", expires=None):
     if expires:
         cookie[name]["expires"] = email.utils.formatdate(
             expires, localtime=False, usegmt=True)
+    header_value = cookie.output()[12:]
+    logging.info(cookie.output()[12:])
+    #response.headers._headers.append(('Set-Cookie', header_value))
+    response.headers.add_header("Set-Cookie", header_value)
     #response.headers._headers.append(("Set-Cookie", cookie.output()[12:]))
-    response.set_cookie('fb_user', cookie.output()[12:])
-    #response.headers._headers.append(("Set-Cookie", cookie.output()[12:]))
+
+
+def parse_cookie_simple(value):
+    if not value:
+        return None
+
+    return base64.b64decode(value)
 
 
 def parse_cookie(value):
@@ -241,12 +211,6 @@ def cookie_signature(*parts):
         hash.update(part)
     return hash.hexdigest()
 
-
-
-
-jinja_environment = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(os.path.dirname(__file__))
-)
 
 app = webapp2.WSGIApplication(
     [('/', HomeHandler), ('/auth/logout', LogoutHandler), ("/auth/login", LoginHandler)],

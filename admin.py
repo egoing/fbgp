@@ -12,6 +12,7 @@ from google.appengine.api import users
 
 _config = lib_config.register('main', {'FACEBOOK_ID':None, 'FACEBOOK_SECRECT':None})
 
+#dao 사용자 모델 정의
 class User(db.Model):
     id = db.StringProperty(required=True)
     created = db.DateTimeProperty(auto_now_add=True)
@@ -20,10 +21,12 @@ class User(db.Model):
     profile_url = db.StringProperty(required=True)
     access_token = db.StringProperty(required=True)
 
+#템플릿 엔진 설정
 JINJA_ENVIRONMENT = jinja2.Environment(
   loader = jinja2.FileSystemLoader(os.path.dirname(__file__)),
   extensions = ['jinja2.ext.autoescape'])
 
+#기본 핸들러 : 웹요청 통로
 class BaseHandler(webapp2.RequestHandler):
     def require_admin(self):
         user = users.get_current_user()
@@ -61,16 +64,16 @@ class BaseHandler(webapp2.RequestHandler):
         else:
             # Either used just logged in or just saw the first page
             # We'll see here
-            logging.info("Check if user is logged in to Facebook.")
+            logging.info("Check if user is logged in to Facebook. 페이스북 로그인 체크")
             cookie = facebook.get_user_from_cookie(self.request.cookies,
                                                    _config.FACEBOOK_ID,
                                                    _config.FACEBOOK_SECRECT)
             if cookie:
-                # Okay so user logged in.
-                # Now, check to see if existing user
+                # Okay so user logged in. 로그인 완료
+                # Now, check to see if existing user  사용자 로그인 여부 체크
                 user = User.get_by_key_name(cookie["uid"])
                 if not user:
-                    # Not an existing user so get user info
+                    # Not an existing user so get user info 사용자가 존재하지 않으면 사용자 정보를 가져오기
                     graph = facebook.GraphAPI(cookie["access_token"])
                     profile = graph.get_object("me")
                     user = User(
@@ -82,7 +85,7 @@ class BaseHandler(webapp2.RequestHandler):
                     )
                     user.put()
                 elif user.access_token != cookie["access_token"]:
-                    logging.info('Existing app user with new access token')
+                    logging.info('Existing app user with new access token 새로운 접근토근이 존재')
                     # get long live token
                     graph = facebook.GraphAPI(cookie["access_token"])
                     token = graph.extend_access_token(app_id=FACEBOOK_APP_ID,app_secret=FACEBOOK_APP_SECRET)['access_token']
@@ -91,7 +94,7 @@ class BaseHandler(webapp2.RequestHandler):
                     # save user in objectstore
                     user.access_token = token
                     user.put()
-                # User is now logged in
+                # User is now logged in 사용자가 로그인 상태
                 self.session["user"] = dict(
                     name=user.name,
                     profile_url=user.profile_url,
@@ -99,7 +102,7 @@ class BaseHandler(webapp2.RequestHandler):
                     access_token=user.access_token
                 )
                 return self.session.get("user")
-        logging.info("No user logged in.")
+        logging.info("No user logged in. 로그인된 유저가 없")
         return None
 
     def dispatch(self):
@@ -107,7 +110,7 @@ class BaseHandler(webapp2.RequestHandler):
         This snippet of code is taken from the webapp2 framework documentation.
         See more at
         http://webapp-improved.appspot.com/api/webapp2_extras/sessions.html
-
+	    리퀘스트를 디스패츠
         """
         self.session_store = sessions.get_store(request=self.request)
         try:
@@ -121,7 +124,7 @@ class BaseHandler(webapp2.RequestHandler):
         This snippet of code is taken from the webapp2 framework documentation.
         See more at
         http://webapp-improved.appspot.com/api/webapp2_extras/sessions.html
-
+		세션을 얻
         """
         return self.session_store.get_session()
 
