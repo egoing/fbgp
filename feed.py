@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding:utf-8 -*-
 #
 # Copyright 2010 Facebook
 #
@@ -15,25 +14,62 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+"""A barebones AppEngine application that uses Facebook for login.
+
+This application uses OAuth 2.0 directly rather than relying on Facebook's
+JavaScript SDK for login. It also accesses the Facebook Graph API directly
+rather than using the Python SDK. It is designed to illustrate how easy
+it is to use the Facebook Platform without any third party code.
+
+See the "appengine" directory for an example using the JavaScript SDK.
+Using JavaScript is recommended if it is feasible for your application,
+as it handles some complex authentication states that can only be detected
+in client-side code.
 """
-A barebones AppEngine application that uses Facebook for login.
-
-1.  Make sure you add a copy of facebook.py (from python-sdk/src/)
-    into this directory so it can be imported.
-2.  Don't forget to tick Login With Facebook on your facebook app's
-    dashboard and place the app's url wherever it is hosted
-3.  Place a random, unguessable string as a session secret below in
-    config dict.
-4.  Fill app id and app secret.
-5.  Change the application name in app.yaml.
-
-"""
-
 import facebook
 import webapp2
 import os
 import jinja2
+import cookielib
 import urllib2
+
+import requests
+
+import datetime
+import facebook
+import jinja2
+import os
+import webapp2
+import urllib2
+from operator import itemgetter, attrgetter
+from webapp2_extras import json
+
+
+
+
+import base64
+import cgi
+import Cookie
+import email.utils
+import hashlib
+import hmac
+import logging
+import os.path
+import time
+import urllib
+import wsgiref.handlers
+
+#from django.utils import simplejson as json
+from google.appengine.ext import db
+from google.appengine.ext import webapp
+from google.appengine.ext.webapp import util
+from google.appengine.ext.webapp import template
+
+import webapp2
+
+from google.appengine.ext import db
+from webapp2_extras import sessions
+
 from google.appengine.api import lib_config
 import logging
 
@@ -42,14 +78,15 @@ logging.getLogger().setLevel(logging.DEBUG)
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-_config = lib_config.register('main', {'FACEBOOK_ID':None, 'FACEBOOK_SECRECT':None})
+_config = lib_config.register('main', {'FACEBOOK_ID':None, 'FACEBOOK_SECRET':None})
 
 
-from google.appengine.ext import db
-from webapp2_extras import sessions
+FACEBOOK_APP_ID = _config.FACEBOOK_ID
+FACEBOOK_APP_SECRET = _config.FACEBOOK_SECRET
 
 config = {}
 config['webapp2_extras.sessions'] = dict(secret_key='')
+
 
 
 class User(db.Model):
@@ -61,122 +98,158 @@ class User(db.Model):
     access_token = db.StringProperty(required=True)
 
 
-class BaseHandler(webapp2.RequestHandler):
-
-    logging.info("BaseHandler 기본 핸들")
-
-    """Provides access to the active Facebook user in self.current_user
-    The property is lazy-loaded on first access, using the cookie saved
-    by the Facebook JavaScript SDK to determine the user ID of the active
-    user. See http://developers.facebook.com/docs/authentication/ for
-    more information.
-    """
+class BaseHandler(webapp.RequestHandler):
     @property
     def current_user(self):
-        if self.session.get("user"):
-            # User is logged in
-            logging.info("User is logged in. 사용자 로그인 ")
-            return self.session.get("user")
-        else:
-            # Either used just logged in or just saw the first page
-            # We'll see here
-            logging.info("Check if user is logged in to Facebook.")
-            cookie = facebook.get_user_from_cookie(self.request.cookies,
-                                                   _config.FACEBOOK_ID,
-                                                   _config.FACEBOOK_APP_SECRET)
-            if cookie:
-                # Okay so user logged in.
-                # Now, check to see if existing user
-                user = User.get_by_key_name(cookie["uid"])
-                if not user:
-                    # Not an existing user so get user info
-                    graph = facebook.GraphAPI(cookie["access_token"])
-                    profile = graph.get_object("me")
-                    user = User(
-                        key_name=str(profile["id"]),
-                        id=str(profile["id"]),
-                        name=profile["name"],
-                        profile_url=profile["link"],
-                        access_token=cookie["access_token"]
-                    )
-                    user.put()
-                elif user.access_token != cookie["access_token"]:
-                    logging.info('Existing app user with new access token')
-                    # get long live token
-                    graph = facebook.GraphAPI(cookie["access_token"])
-                    token = graph.extend_access_token(app_id=FACEBOOK_APP_ID,app_secret=FACEBOOK_APP_SECRET)['access_token']
-                    graph.access_token = token
-                    # TODO how to update existing cookie, unless it is okay to keep extending
-                    # save user in objectstore
-                    user.access_token = token
-                    user.put()
-                # User is now logged in
-                self.session["user"] = dict(
-                    name=user.name,
-                    profile_url=user.profile_url,
-                    id=user.id,
-                    access_token=user.access_token
-                )
-                return self.session.get("user")
-        logging.info("No user logged in.")
-        return None
+        """Returns the logged in Facebook user, or None if unconnected."""
+        if not hasattr(self, "_current_user"):
+            self._current_user = None
+            user_id = parse_cookie(self.request.cookies.get("fb_user"))
+            if user_id:
+                self._current_user = User.get_by_key_name(user_id)
+        return self._current_user
 
-    def dispatch(self):
-        """
-        This snippet of code is taken from the webapp2 framework documentation.
-        See more at
-        http://webapp-improved.appspot.com/api/webapp2_extras/sessions.html
 
-        """
-        self.session_store = sessions.get_store(request=self.request)
-        try:
-            webapp2.RequestHandler.dispatch(self)
-        finally:
-            self.session_store.save_sessions(self.response)
-
-    @webapp2.cached_property
-    def session(self):
-        """
-        This snippet of code is taken from the webapp2 framework documentation.
-        See more at
-        http://webapp-improved.appspot.com/api/webapp2_extras/sessions.html
-
-        """
-        return self.session_store.get_session()
 
 
 class HomeHandler(BaseHandler):
     def get(self):
-        template = jinja_environment.get_template('view/example.html')
+        path = os.path.join(os.path.dirname(__file__), "view/oauth.html")
+        args = dict(current_user=self.current_user)
+        self.response.out.write(template.render(path, args))
+        #return
+        #logging.info(self.current_user)
+        #template = jinja_environment.get_template('view/oauth.html')
+        #self.response.out.write(template.render(dict(
+        #    current_user=self.current_user
+        #)))
+        #logging.info(3)
 
-        self.response.out.write(template.render(dict(
-            facebook_app_id=_config.FACEBOOK_ID,
-            #current_user=self.current_user
-        )))
 
-    def post(self):
-        url = self.request.get('url')
-        file = urllib2.urlopen(url)
-        graph = facebook.GraphAPI(self.current_user['access_token'])
-        response = graph.put_photo(file, "Test Image")
-        photo_url = ("http://www.facebook.com/"
-                     "photo.php?fbid={0}".format(response['id']))
-        self.redirect(str(photo_url))
+class LoginHandler(BaseHandler):
+    def get(self):
+        verification_code = self.request.get("code")
+        args = dict(client_id=FACEBOOK_APP_ID,
+                    redirect_uri=self.request.path_url)
+        if self.request.get("code"):
+            args["client_secret"] = FACEBOOK_APP_SECRET
+            args["code"] = self.request.get("code")
+            response = cgi.parse_qs(urllib.urlopen(
+                "https://graph.facebook.com/oauth/access_token?" +
+                urllib.urlencode(args)).read())
+            access_token = response["access_token"][-1]
+            logging.info("access token")
+            logging.info(access_token)
+           
+
+            # Download the user profile and cache a local instance of the
+            # basic profile info
+   
+            logging.info("access_url")
+            
+            #access_url =  "https://graph.facebook.com/me?" + urllib.urlencode(dict(access_token=access_token))
+            access_url =  "https://graph.facebook.com/me?access_token="+access_token
+            
+            logging.info(access_url)
+
+            logging.info("debugging")
+            logging.info(1)
+
+            import json    
+            profile = json.load(urllib.urlopen(access_url))
+
+            logging.info(152)
+            self.response.write(profile["id"])
+            #return
+
+            user = User(key_name=str(profile["id"]), id=str(profile["id"]),
+                        name=profile["name"], access_token=access_token,
+                        profile_url=profile["link"])
+            """         
+            profile = graph.get_object("me")
+            user = User(
+                        key_name=str(profile["id"]),
+                        id=str(profile["id"]),
+                        name=profile["name"],
+                        profile_url=profile["link"],
+                        access_token=token,
+            )
+"""
+            user.put()
+            set_cookie(self.response, "fb_user", str(profile["id"]),
+                       expires=time.time() + 30 * 86400)
+
+            self.redirect("/")
+        else:
+            self.redirect(
+                "https://graph.facebook.com/oauth/authorize?" +
+                urllib.urlencode(args))
 
 
 class LogoutHandler(BaseHandler):
     def get(self):
-        if self.current_user is not None:
-            self.session['user'] = None
+        set_cookie(self.response, "fb_user", "", expires=time.time() - 86400)
+        self.redirect("/")
 
-        self.redirect('/')
+
+def set_cookie(response, name, value, domain=None, path="/", expires=None):
+    """Generates and signs a cookie for the give name/value"""
+    timestamp = str(int(time.time()))
+    value = base64.b64encode(value)
+    signature = cookie_signature(value, timestamp)
+    cookie = Cookie.BaseCookie()
+    cookie[name] = "|".join([value, timestamp, signature])
+    cookie[name]["path"] = path
+    if domain:
+        cookie[name]["domain"] = domain
+    if expires:
+        cookie[name]["expires"] = email.utils.formatdate(
+            expires, localtime=False, usegmt=True)
+    #response.headers._headers.append(("Set-Cookie", cookie.output()[12:]))
+    response.set_cookie('fb_user', cookie.output()[12:])
+    #response.headers._headers.append(("Set-Cookie", cookie.output()[12:]))
+
+
+def parse_cookie(value):
+    """Parses and verifies a cookie value from set_cookie"""
+    if not value:
+        return None
+    parts = value.split("|")
+    if len(parts) != 3:
+        return None
+    if cookie_signature(parts[0], parts[1]) != parts[2]:
+        logging.warning("Invalid cookie signature %r", value)
+        return None
+    timestamp = int(parts[1])
+    if timestamp < time.time() - 30 * 86400:
+        logging.warning("Expired cookie %r", value)
+        return None
+    try:
+        return base64.b64decode(parts[0]).strip()
+    except:
+        return None
+
+
+def cookie_signature(*parts):
+    """Generates a cookie signature.
+
+    We use the Facebook app secret since it is different for every app (so
+    people using this example don't accidentally all use the same secret).
+    """
+    hash = hmac.new(FACEBOOK_APP_SECRET, digestmod=hashlib.sha1)
+    for part in parts:
+        hash.update(part)
+    return hash.hexdigest()
+
+
+
 
 jinja_environment = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__))
 )
 
 app = webapp2.WSGIApplication(
-    [('/', HomeHandler), ('/logout', LogoutHandler)],
+    [('/', HomeHandler), ('/auth/logout', LogoutHandler), ("/auth/login", LoginHandler)],
     debug=True,
     config=config
 )
