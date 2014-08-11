@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>생활코딩 소식</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Bootstrap -->
+    <link href="https://{{ theme }}" rel="stylesheet" />
+
+    <link href="/static/style.css" rel="stylesheet" />    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+  </head>
+  <body>
+    <div class="navbar navbar-static-top">
+      <div class="navbar-inner">
+        <div class="container">
+     
+          {% if is_admin %}              
+          <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          {% endif %}
+     
+          <!-- Be sure to leave the brand out there if you want it shown -->
+          <a class="brand" href="#">생활코딩소식</a>
+     		
+          {% if is_admin %}              
+          <!-- Everything you want hidden at 940px or less, place within here -->
+          <div class="nav-collapse collapse">
+            <!-- .nav, .navbar-search, .navbar-form, etc -->
+            
+            <ul class="nav">
+              
+              <li class="">
+                <a href="/list">목록</a>
+              </li>
+              <li class="">
+                <a href="/">등록</a>
+              </li>
+              <li>
+                <a data-toggle="modal" href="#notify" data-backdrop="true">소식발행</a>
+              </li>              
+            </ul>
+            
+          </div>
+          {% endif %}
+        </div>
+      </div>      
+    </div>
+    {% block content %}{% endblock %}
+  </body>
+  </html>    
