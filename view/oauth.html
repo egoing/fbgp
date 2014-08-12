@@ -1,0 +1,15 @@
+{% extends "/view/base.html" %}
+{% block content %}
+{% autoescape true %}
+
+    {% if current_user %}
+      <p><a href="{{ current_user.profile_url }}"><img src="http://graph.facebook.com/{{ current_user.id }}/picture"/></a></p>
+      <p>로그인 됨 {{ current_user.name|escape }}</p>
+      <p><a href="/auth/logout">로그아웃</a></p>
+    {% else %}
+      <p>로그인 안됨</p>
+      <p><a href="/auth/login">페이스북 로그인</a></p>
+    {% endif %}
+  
+{% endautoescape %}
+{% endblock %}
