@@ -15,6 +15,16 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+"""
+    feed.py
+    ~~~~~~~~~~~~
+
+    Implements the facebook group post related objects.
+
+    :copyright: (c) 2014 by DURU.
+    :license: 
+"""
+
 """A barebones AppEngine application that uses Facebook for login.
 
 This application uses OAuth 2.0 directly rather than relying on Facebook's
@@ -27,6 +37,7 @@ Using JavaScript is recommended if it is feasible for your application,
 as it handles some complex authentication states that can only be detected
 in client-side code.
 """
+import facebook
 
 import webapp2
 import jinja2
@@ -42,6 +53,7 @@ import logging
 import os.path
 import time
 import urllib
+import urllib2
 import wsgiref.handlers
 
 import json
@@ -50,6 +62,9 @@ from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 from google.appengine.ext.webapp import template
+
+import time
+import re
 
 from webapp2_extras import sessions
 
@@ -62,12 +77,13 @@ logging.getLogger().setLevel(logging.DEBUG)
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-_config = lib_config.register('main', {'FACEBOOK_ID':None, 'FACEBOOK_SECRET':None})
+_config = lib_config.register('main', {'FACEBOOK_ID':None, 'FACEBOOK_SECRET':None, 'GROUP_ID':None})
 
 #페이스북 앱 정보
 
 FACEBOOK_APP_ID = _config.FACEBOOK_ID
 FACEBOOK_APP_SECRET = _config.FACEBOOK_SECRET
+GROUP_ID = _config.GROUP_ID
 
 config = {}
 config['webapp2_extras.sessions'] = dict(secret_key='')
@@ -133,6 +149,11 @@ class LoginHandler(BaseHandler):
             # basic profile info
             profile = json.load(urllib.urlopen("https://graph.facebook.com/me?" + urllib.urlencode(dict(access_token=access_token))))
             
+            #logging.info(urllib.urlencode("debeg" + urllib.urlencode(dict(access_token=access_token)))
+            
+            logging.info("https://graph.facebook.com/me?" + urllib.urlencode(dict(access_token=access_token)))
+
+
             logging.info("after call profile ")
             user = User(key_name=str(profile["id"]), id=str(profile["id"]),
                         name=profile["name"], access_token=access_token,
@@ -151,7 +172,134 @@ class LogoutHandler(BaseHandler):
         self.redirect("/")
 
 
-def set_cookie(response, name, value, domain=None, path="/", expires=None):
+"""그룹에 글을 가져온다. FQL를 이용한다. FQL은 페이스북 API v2.1에서 디플리케션 되었다. 신규로 등록된 어플리케이션 그 이전 버전의 API를 사용하지 못한다.
+자세한 정보 : 
+1. http://stackoverflow.com/questions/25256428/query-facebook-for-what-version-of-the-graph-api-is-being-used-can-be-used
+2. https://developers.facebook.com/docs/apps/changelog
+"""
+class GroupsFqlHandler(BaseHandler):
+    def get(self):
+        user = self.current_user
+        self.response.write("groups post")
+        self.response.write(user.name)
+        if user:
+            #userprefs = models.get_userprefs(user['id'])
+            self.response.write("1")
+            #self.response.write(user['access_token'])
+            self.response.write(user.access_token)
+            #graph = facebook.GraphAPI(user.access_token)
+            #json.load(urllib.urlopen("https://graph.facebook.com/me?" + urllib.urlencode(dict(access_token=access_token))))
+            #post_data = 'SELECT affiliations FROM user WHERE uid = me()'
+            query = "SELECT post_id FROM stream WHERE source_id='"+ GROUP_ID +"' LIMIT 10"
+            fql = {'q': "SELECT post_id FROM stream WHERE source_id='"+ GROUP_ID +"' LIMIT 10"}
+            fql1 = {'q': "SELECT message, message_tags FROM stream WHERE source_id='1389107971348349' LIMIT 10"}
+            #fql is deprecated at v2.1
+            #"https://graph.facebook.com/" + config.GROUPS["#GROUPDICTKEY"] + "?fields=feed&method=GET&format=json&suppress_http_code=1&access_token=" + str(token)
+
+            #post_data = None if post_args is None else urllib.urlencode(post_args)
+            args = ""
+            post_data = None
+
+            #args["access_token"] = str(user.access_token)
+            #args["q"] = fql
+            #args["format"] = "json"
+            #access_token = graph
+            #CAAFhZAoQfTEUBANXxVtzZAZB2wXjntOUNyxZAZCyuwsnilwHuwQlKb8fXHUyy7wadnkU9n3n1iKZCk9xSklPPs8Y9KBDgWT9dCcv2fpux8Tc9BgTIZA2hGS7lnKDPnedNaquFZBDPGf4bbf5SAIWCtJVvxu7XXZBKGU8JjUj0xWM9YfQcKQQ0FtyJqqWYJe6kj3yMzmlUZCtvGWZAk7dZChU9obUsY4FQOBWyTcZD
+            access_token_tool = "CAAFhZAoQfTEUBANXxVtzZAZB2wXjntOUNyxZAZCyuwsnilwHuwQlKb8fXHUyy7wadnkU9n3n1iKZCk9xSklPPs8Y9KBDgWT9dCcv2fpux8Tc9BgTIZA2hGS7lnKDPnedNaquFZBDPGf4bbf5SAIWCtJVvxu7XXZBKGU8JjUj0xWM9YfQcKQQ0FtyJqqWYJe6kj3yMzmlUZCtvGWZAk7dZChU9obUsY4FQOBWyTcZD"
+            #args = "https://graph.facebook.com/v2.0/fql?access_token=" + user.access_token + "&" +urllib.urlencode(fql) +"&format=json"
+            #args = "https://graph.facebook.com/v2.0/fql?access_token=" + access_token_tool + "&" +urllib.urlencode(fql) +"&format=json"
+            args = "https://graph.facebook.com/v2.0/fql?access_token=" + access_token_tool + "&" +urllib.urlencode(fql1) +"&format=json"
+            #https://graph.facebook.com/v2.0/fql?q=(myquery)&access_token=(mytoken)
+
+            #https://graph.facebook.com/v2.0/fql?access_token=CAAFhZAoQfTEUBANXxVtzZAZB2wXjntOUNyxZAZCyuwsnilwHuwQlKb8fXHUyy7wadnkU9n3n1iKZCk9xSklPPs8Y9KBDgWT9dCcv2fpux8Tc9BgTIZA2hGS7lnKDPnedNaquFZBDPGf4bbf5SAIWCtJVvxu7XXZBKGU8JjUj0xWM9YfQcKQQ0FtyJqqWYJe6kj3yMzmlUZCtvGWZAk7dZChU9obUsY4FQOBWyTcZD&q=SELECT+uid%2C+name%2C+profile_url%2C+pic_small%2C+current_location%2C+mutual_friend_count+FROM+user+WHERE+uid+IN+%28SELECT+uid1+FROM+friend+WHERE+uid2+%3D+830732893612512%29&format=json
+
+            logging.info(args)
+            #logging.info(fql)
+            #groupsPostID = json.load(urllib2.urlopen(args, None, timeout=5000))
+            file = urllib2.urlopen(args, None, timeout=5000)
+            #logging.info(str(groupsPostID["post_id"][0]))
+            #logging.info(json.dumps(groupsPostID))
+            #file = urllib2.urlopen("https://graph.facebook.com/fql?" +
+            #                       urllib.urlencode(args),
+            #                       post_data, timeout=5000)
+            #info = groupsPostID['data']
+            #for item in info['post_id']:
+            #     item['post_id']
+
+            try:
+                content = file.read()
+                logging.info(content)
+                self.response.write(" <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /><br />")
+                #decode('cp949')
+
+                self.response.write(content.decode('utf-8'))
+                #response = _parse_json(content)
+            #Return a list if success, return a dictionary if failed
+            #if type(response) is dict and "error_code" in response:
+                #raise GraphAPIError(response)
+            except Exception, e:
+                raise e
+            finally:
+                file.close()
+
+            logging.info("179")
+        else:
+            self.response.write("2")
+
+
+class GroupsGraphApiHandler(BaseHandler):
+    def get(self) :
+        #중복 코드 제
+        self.response.write("groupsGraphAPI Call")
+        user = self.current_user
+        if user:
+            logging.info("verify access_token")
+            logging.info(user.access_token)
+            token=user.access_token
+            graphApi = "https://graph.facebook.com/" + GROUP_ID + "?fields=feed&method=GET&format=json&suppress_http_code=1&access_token=" + str(token)
+            logging.info(graphApi)
+            file = urllib2.urlopen(graphApi)
+            content = json.loads(file.read())
+
+            #에러 처리
+            if "error" in content:
+                if content["error"]["code"] == 613:
+                    time.sleep(200)
+                    file = urllib2.urlopen("https://graph.facebook.com/" + GROUP_ID + "?fields=feed&method=GET&format=json&suppress_http_code=1&access_token=" + str(token))
+                    content = json.loads(file.read())
+
+            previous = content["feed"]["paging"]["next"]
+            NewsFeed = content["feed"]
+
+            logging.info("previous : " + previous)
+
+        #dump 확
+        NewsFeedData =  content
+
+        import sys
+        reload(sys)
+        sys.setdefaultencoding('utf-8')
+
+
+
+        #words = re.findall(u'[\uac00-\ud7a3]+', str(feed))
+
+        self.response.write(str(NewsFeedData).decode('utf-8') )
+        print str(NewsFeedData).decode('utf-8')
+        print '#############################'
+        #print NewsFeedData['message'].decode('utf-8')
+
+        a_list = []
+        a_list.append({'key': unicode(str(NewsFeedData), 'utf-8')})
+
+
+        print json.dumps(a_list, ensure_ascii=False) # "utf-8" encoding is default
+      
+
+
+
+
+def set_cookie(response, name, value, domain=None, path="/",expires=None):
     """Generates and signs a cookie for the give name/value
     승인된 쿠키를 생
     """
@@ -213,7 +361,7 @@ def cookie_signature(*parts):
 
 
 app = webapp2.WSGIApplication(
-    [('/', HomeHandler), ('/auth/logout', LogoutHandler), ("/auth/login", LoginHandler)],
+    [('/', HomeHandler), ('/auth/logout', LogoutHandler), ("/auth/login", LoginHandler), ('/groups', GroupsFqlHandler), ('/groups_api', GroupsGraphApiHandler)],
     debug=True,
     config=config
 )

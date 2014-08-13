@@ -12,6 +12,9 @@ handlers:
 - url: /
   script: feed.app
 
+- url: /.*
+  script: feed.app
+
 
 - url: /admin
   script: admin.app

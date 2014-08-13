@@ -1,0 +1,14 @@
+{% extends "/view/base.html" %}
+{% block content %}
+{% autoescape true %}
+
+    {% if group_post %}
+      <p> 그룹에 글 </p>
+       <p><a href="/auth/logout">로그아웃</a></p>
+    {% else %}
+      <p> 글 없음 </p>
+      	<p><a href="/auth/logout">로그아웃</a></p>
+    {% endif %}
+  
+{% endautoescape %}
+{% endblock %}
