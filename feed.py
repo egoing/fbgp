@@ -183,73 +183,34 @@ class GroupsFqlHandler(BaseHandler):
         self.response.write("groups post")
         self.response.write(user.name)
         if user:
-            #userprefs = models.get_userprefs(user['id'])
             self.response.write("1")
-            #self.response.write(user['access_token'])
             self.response.write(user.access_token)
-            #graph = facebook.GraphAPI(user.access_token)
-            #json.load(urllib.urlopen("https://graph.facebook.com/me?" + urllib.urlencode(dict(access_token=access_token))))
-            #post_data = 'SELECT affiliations FROM user WHERE uid = me()'
             query = "SELECT post_id FROM stream WHERE source_id='"+ GROUP_ID +"' LIMIT 10"
             fql = {'q': "SELECT post_id FROM stream WHERE source_id='"+ GROUP_ID +"' LIMIT 10"}
             fql1 = {'q': "SELECT message, message_tags FROM stream WHERE source_id='1389107971348349' LIMIT 10"}
-            #fql is deprecated at v2.1
-            #"https://graph.facebook.com/" + config.GROUPS["#GROUPDICTKEY"] + "?fields=feed&method=GET&format=json&suppress_http_code=1&access_token=" + str(token)
-
-            #post_data = None if post_args is None else urllib.urlencode(post_args)
             args = ""
             post_data = None
-
-            #args["access_token"] = str(user.access_token)
-            #args["q"] = fql
-            #args["format"] = "json"
-            #access_token = graph
-            #CAAFhZAoQfTEUBANXxVtzZAZB2wXjntOUNyxZAZCyuwsnilwHuwQlKb8fXHUyy7wadnkU9n3n1iKZCk9xSklPPs8Y9KBDgWT9dCcv2fpux8Tc9BgTIZA2hGS7lnKDPnedNaquFZBDPGf4bbf5SAIWCtJVvxu7XXZBKGU8JjUj0xWM9YfQcKQQ0FtyJqqWYJe6kj3yMzmlUZCtvGWZAk7dZChU9obUsY4FQOBWyTcZD
-            access_token_tool = "CAAFhZAoQfTEUBANXxVtzZAZB2wXjntOUNyxZAZCyuwsnilwHuwQlKb8fXHUyy7wadnkU9n3n1iKZCk9xSklPPs8Y9KBDgWT9dCcv2fpux8Tc9BgTIZA2hGS7lnKDPnedNaquFZBDPGf4bbf5SAIWCtJVvxu7XXZBKGU8JjUj0xWM9YfQcKQQ0FtyJqqWYJe6kj3yMzmlUZCtvGWZAk7dZChU9obUsY4FQOBWyTcZD"
-            #args = "https://graph.facebook.com/v2.0/fql?access_token=" + user.access_token + "&" +urllib.urlencode(fql) +"&format=json"
-            #args = "https://graph.facebook.com/v2.0/fql?access_token=" + access_token_tool + "&" +urllib.urlencode(fql) +"&format=json"
+            ccess_token_tool = "CAAFhZAoQfTEUBANXxVtzZAZB2wXjntOUNyxZAZCyuwsnilwHuwQlKb8fXHUyy7wadnkU9n3n1iKZCk9xSklPPs8Y9KBDgWT9dCcv2fpux8Tc9BgTIZA2hGS7lnKDPnedNaquFZBDPGf4bbf5SAIWCtJVvxu7XXZBKGU8JjUj0xWM9YfQcKQQ0FtyJqqWYJe6kj3yMzmlUZCtvGWZAk7dZChU9obUsY4FQOBWyTcZD"
             args = "https://graph.facebook.com/v2.0/fql?access_token=" + access_token_tool + "&" +urllib.urlencode(fql1) +"&format=json"
-            #https://graph.facebook.com/v2.0/fql?q=(myquery)&access_token=(mytoken)
-
-            #https://graph.facebook.com/v2.0/fql?access_token=CAAFhZAoQfTEUBANXxVtzZAZB2wXjntOUNyxZAZCyuwsnilwHuwQlKb8fXHUyy7wadnkU9n3n1iKZCk9xSklPPs8Y9KBDgWT9dCcv2fpux8Tc9BgTIZA2hGS7lnKDPnedNaquFZBDPGf4bbf5SAIWCtJVvxu7XXZBKGU8JjUj0xWM9YfQcKQQ0FtyJqqWYJe6kj3yMzmlUZCtvGWZAk7dZChU9obUsY4FQOBWyTcZD&q=SELECT+uid%2C+name%2C+profile_url%2C+pic_small%2C+current_location%2C+mutual_friend_count+FROM+user+WHERE+uid+IN+%28SELECT+uid1+FROM+friend+WHERE+uid2+%3D+830732893612512%29&format=json
-
             logging.info(args)
-            #logging.info(fql)
-            #groupsPostID = json.load(urllib2.urlopen(args, None, timeout=5000))
             file = urllib2.urlopen(args, None, timeout=5000)
-            #logging.info(str(groupsPostID["post_id"][0]))
-            #logging.info(json.dumps(groupsPostID))
-            #file = urllib2.urlopen("https://graph.facebook.com/fql?" +
-            #                       urllib.urlencode(args),
-            #                       post_data, timeout=5000)
-            #info = groupsPostID['data']
-            #for item in info['post_id']:
-            #     item['post_id']
 
             try:
                 content = file.read()
                 logging.info(content)
                 self.response.write(" <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /><br />")
-                #decode('cp949')
-
                 self.response.write(content.decode('utf-8'))
-                #response = _parse_json(content)
-            #Return a list if success, return a dictionary if failed
-            #if type(response) is dict and "error_code" in response:
-                #raise GraphAPIError(response)
             except Exception, e:
                 raise e
             finally:
                 file.close()
-
-            logging.info("179")
         else:
             self.response.write("2")
 
 
 class GroupsGraphApiHandler(BaseHandler):
     def get(self) :
-        #중복 코드 제
+        
         self.response.write("groupsGraphAPI Call")
         user = self.current_user
         if user:
@@ -273,27 +234,30 @@ class GroupsGraphApiHandler(BaseHandler):
 
             logging.info("previous : " + previous)
 
-        #dump 확
         NewsFeedData =  content
-
         import sys
-        reload(sys)
-        sys.setdefaultencoding('utf-8')
+        logging.info('encoding verify')
+        logging.info(sys.stdin.encoding)
+        #import sys
+        #reload(sys)
+        #sys.setdefaultencoding('utf-8')
 
 
 
         #words = re.findall(u'[\uac00-\ud7a3]+', str(feed))
-
-        self.response.write(str(NewsFeedData).decode('utf-8') )
-        print str(NewsFeedData).decode('utf-8')
-        print '#############################'
+        #logging.info('uac00'.decode('utf-8'))
+        #logging.info('test')
+        #logging.info(sys.stdin.encoding)
+        #self.response.write(str(NewsFeedData).decode('utf-8') )
+        #print str(NewsFeedData).decode('utf-8')
+        #print '#############################'
         #print NewsFeedData['message'].decode('utf-8')
 
-        a_list = []
-        a_list.append({'key': unicode(str(NewsFeedData), 'utf-8')})
+        #a_list = []
+        #a_list.append({'key': unicode(str(NewsFeedData), 'utf-8')})
 
 
-        print json.dumps(a_list, ensure_ascii=False) # "utf-8" encoding is default
+        #print json.dumps(a_list, ensure_ascii=False) # "utf-8" encoding is default
       
 
 
@@ -315,10 +279,7 @@ def set_cookie(response, name, value, domain=None, path="/",expires=None):
         cookie[name]["expires"] = email.utils.formatdate(
             expires, localtime=False, usegmt=True)
     header_value = cookie.output()[12:]
-    logging.info(cookie.output()[12:])
-    #response.headers._headers.append(('Set-Cookie', header_value))
     response.headers.add_header("Set-Cookie", header_value)
-    #response.headers._headers.append(("Set-Cookie", cookie.output()[12:]))
 
 
 def parse_cookie_simple(value):
