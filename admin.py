@@ -88,7 +88,7 @@ class BaseHandler(webapp2.RequestHandler):
                     logging.info('Existing app user with new access token 새로운 접근토근이 존재')
                     # get long live token
                     graph = facebook.GraphAPI(cookie["access_token"])
-                    token = graph.extend_access_token(app_id=FACEBOOK_APP_ID,app_secret=FACEBOOK_APP_SECRET)['access_token']
+                    token = graph.extend_access_token(app_id=FACEBOOK_APP_ID,app_secret=FACEBOOK_SECRET)['access_token']
                     graph.access_token = token
                     # TODO how to update existing cookie, unless it is okay to keep extending
                     # save user in objectstore

@@ -82,7 +82,7 @@ _config = lib_config.register('main', {'FACEBOOK_ID':None, 'FACEBOOK_SECRET':Non
 #페이스북 앱 정보
 
 FACEBOOK_APP_ID = _config.FACEBOOK_ID
-FACEBOOK_APP_SECRET = _config.FACEBOOK_SECRET
+FACEBOOK_SECRET = _config.FACEBOOK_SECRET
 FQL_ACCESS_TOKEN = _config.FQL_ACCESS_TOKEN
 GROUP_ID = _config.GROUP_ID
 
@@ -137,7 +137,7 @@ class LoginHandler(BaseHandler):
         args = dict(client_id=FACEBOOK_APP_ID,
                     redirect_uri=self.request.path_url)
         if self.request.get("code"):
-            args["client_secret"] = FACEBOOK_APP_SECRET
+            args["client_secret"] = FACEBOOK_SECRET
             args["code"] = self.request.get("code")
             response = cgi.parse_qs(urllib.urlopen(
                 "https://graph.facebook.com/oauth/access_token?" +
@@ -200,7 +200,7 @@ class GroupsFqlHandler(BaseHandler):
                 self.response.write(" <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /><br />")
 
                 stringUnicode = '\ud504\ub85c\uadf8\ub798\ubc0d\uacfc'
-                uni = stringUnicode.decode("UTF-8")
+                #uni = stringUnicode.decode("UTF-8")
                 self.response.write('<script>'+'console.log(unescape("'+uni.encode('utf-8')+'"))</script>')
                 self.response.write('<script>'+'document.write(unescape("'+uni.encode('utf-8')+'"))</script>')
                 self.response.write(uni.replace('%u',r'\u').decode("unicode_escape"))    
@@ -312,7 +312,7 @@ def cookie_signature(*parts):
     We use the Facebook app secret since it is different for every app (so
     people using this example don't accidentally all use the same secret).
     """
-    hash = hmac.new(FACEBOOK_APP_SECRET, digestmod=hashlib.sha1)
+    hash = hmac.new(FACEBOOK_SECRET, digestmod=hashlib.sha1)
     for part in parts:
         hash.update(part)
     return hash.hexdigest()

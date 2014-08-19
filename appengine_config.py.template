@@ -1,4 +1,6 @@
 main_FACEBOOK_ID = ''
 main_FACEBOOK_SECRET = ''
 
+main_FQL_ACCESS_TOKEN = ''
+
 main_GROUP_ID = ''
