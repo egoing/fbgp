@@ -244,6 +244,7 @@ class GroupsGraphApiHandler(BaseHandler):
 
         for x in range(0, len(content["feed"]["data"])):
             NewsFeedMessage +=  '<hr />' +content["feed"]["data"][x]["message"]
+            content["feed"]["data"][x]["message"]
             
         self.response.write(NewsFeedMessage+'<hr >')
 
