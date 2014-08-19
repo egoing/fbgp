@@ -227,7 +227,7 @@ class GroupsGraphApiHandler(BaseHandler):
             logging.info("verify access_token")
             logging.info(user.access_token)
             token=user.access_token
-            url = "https://graph.facebook.com/" + GROUP_ID + "?fields=feed.limit(100){message,full_picture,created_time,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(token)
+            url = "https://graph.facebook.com/" + GROUP_ID + "?fields=feed.limit(10){message,full_picture,created_time,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(token)
             graphApi = url
             file = urllib2.urlopen(graphApi)
             content = json.loads(file.read())
