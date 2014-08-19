@@ -77,12 +77,13 @@ logging.getLogger().setLevel(logging.DEBUG)
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-_config = lib_config.register('main', {'FACEBOOK_ID':None, 'FACEBOOK_SECRET':None, 'GROUP_ID':None})
+_config = lib_config.register('main', {'FACEBOOK_ID':None, 'FACEBOOK_SECRET':None, 'FQL_ACCESS_TOKEN':None, 'GROUP_ID':None})
 
 #페이스북 앱 정보
 
 FACEBOOK_APP_ID = _config.FACEBOOK_ID
 FACEBOOK_APP_SECRET = _config.FACEBOOK_SECRET
+FQL_ACCESS_TOKEN = _config.FQL_ACCESS_TOKEN
 GROUP_ID = _config.GROUP_ID
 
 config = {}
@@ -180,26 +181,29 @@ class LogoutHandler(BaseHandler):
 class GroupsFqlHandler(BaseHandler):
     def get(self):
         user = self.current_user
-        self.response.write("groups post")
+        self.response.write("fql groups post")
         self.response.write(user.name)
         if user:
-            self.response.write("1")
-            self.response.write(user.access_token)
             query = "SELECT post_id FROM stream WHERE source_id='"+ GROUP_ID +"' LIMIT 10"
             fql = {'q': "SELECT post_id FROM stream WHERE source_id='"+ GROUP_ID +"' LIMIT 10"}
             fql1 = {'q': "SELECT message, message_tags FROM stream WHERE source_id='1389107971348349' LIMIT 10"}
-            args = ""
-            post_data = None
-            ccess_token_tool = "CAAFhZAoQfTEUBANXxVtzZAZB2wXjntOUNyxZAZCyuwsnilwHuwQlKb8fXHUyy7wadnkU9n3n1iKZCk9xSklPPs8Y9KBDgWT9dCcv2fpux8Tc9BgTIZA2hGS7lnKDPnedNaquFZBDPGf4bbf5SAIWCtJVvxu7XXZBKGU8JjUj0xWM9YfQcKQQ0FtyJqqWYJe6kj3yMzmlUZCtvGWZAk7dZChU9obUsY4FQOBWyTcZD"
-            args = "https://graph.facebook.com/v2.0/fql?access_token=" + access_token_tool + "&" +urllib.urlencode(fql1) +"&format=json"
-            logging.info(args)
+
+            args = "https://graph.facebook.com/v2.0/fql?access_token=" + FQL_ACCESS_TOKEN + "&" +urllib.urlencode(fql1) +"&format=json"
+            #logging.info(args)
             file = urllib2.urlopen(args, None, timeout=5000)
+
+            import unicodedata
 
             try:
                 content = file.read()
-                logging.info(content)
+                #logging.info(content)
                 self.response.write(" <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /><br />")
-                self.response.write(content.decode('utf-8'))
+
+                stringUnicode = '\ud504\ub85c\uadf8\ub798\ubc0d\uacfc'
+                uni = stringUnicode.decode("UTF-8")
+                self.response.write('<script>'+'console.log(unescape("'+uni.encode('utf-8')+'"))</script>')
+                self.response.write('<script>'+'document.write(unescape("'+uni.encode('utf-8')+'"))</script>')
+                self.response.write(uni.replace('%u',r'\u').decode("unicode_escape"))    
             except Exception, e:
                 raise e
             finally:
@@ -211,13 +215,14 @@ class GroupsFqlHandler(BaseHandler):
 class GroupsGraphApiHandler(BaseHandler):
     def get(self) :
         
-        self.response.write("groupsGraphAPI Call")
+        #iself.response.write("groupsGraphAPI Call")
         user = self.current_user
         if user:
             logging.info("verify access_token")
             logging.info(user.access_token)
             token=user.access_token
-            graphApi = "https://graph.facebook.com/" + GROUP_ID + "?fields=feed&method=GET&format=json&suppress_http_code=1&access_token=" + str(token)
+
+            graphApi = "https://graph.facebook.com/" + GROUP_ID + "?fields=feed.limit(100)&method=GET&format=json&suppress_http_code=1&access_token=" + str(token)
             logging.info(graphApi)
             file = urllib2.urlopen(graphApi)
             content = json.loads(file.read())
@@ -234,33 +239,24 @@ class GroupsGraphApiHandler(BaseHandler):
 
             logging.info("previous : " + previous)
 
-        NewsFeedData =  content
-        import sys
-        logging.info('encoding verify')
-        logging.info(sys.stdin.encoding)
-        #import sys
-        #reload(sys)
-        #sys.setdefaultencoding('utf-8')
+        NewsFeedMessage = '<b>message</b>'
 
 
+        for x in range(0, len(content["feed"]["data"])):
+            NewsFeedMessage +=  '<hr />' +content["feed"]["data"][x]["message"]
+            
+        self.response.write(NewsFeedMessage+'<hr >')
 
-        #words = re.findall(u'[\uac00-\ud7a3]+', str(feed))
-        #logging.info('uac00'.decode('utf-8'))
-        #logging.info('test')
-        #logging.info(sys.stdin.encoding)
-        #self.response.write(str(NewsFeedData).decode('utf-8') )
-        #print str(NewsFeedData).decode('utf-8')
-        #print '#############################'
-        #print NewsFeedData['message'].decode('utf-8')
-
-        #a_list = []
-        #a_list.append({'key': unicode(str(NewsFeedData), 'utf-8')})
-
-
-        #print json.dumps(a_list, ensure_ascii=False) # "utf-8" encoding is default
+        #self.response.write(NewsFeedData.replace('%u',r'\u').decode("unicode_escape"))    
       
 
-
+def safe_str(obj):
+    """ return the byte string representation of obj """
+    try:
+        return str(obj)
+    except UnicodeEncodeError:
+        # obj is unicode
+        return unicode(obj).encode('unicode_escape')
 
 
 def set_cookie(response, name, value, domain=None, path="/",expires=None):
