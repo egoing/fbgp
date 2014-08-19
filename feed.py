@@ -58,7 +58,7 @@ import wsgiref.handlers
 
 import json
 #from django.utils import simplejson as json
-from google.appengine.ext import db
+from google.appengine.ext import ndb
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 from google.appengine.ext.webapp import template
@@ -91,13 +91,19 @@ config['webapp2_extras.sessions'] = dict(secret_key='')
 
 
 # dao 모델 설정
-class User(db.Model):
-    id = db.StringProperty(required=True)
-    created = db.DateTimeProperty(auto_now_add=True)
-    updated = db.DateTimeProperty(auto_now=True)
-    name = db.StringProperty(required=True)
-    profile_url = db.StringProperty(required=True)
-    access_token = db.StringProperty(required=True)
+class User(ndb.Model):
+    id = ndb.StringProperty(required=True)
+    created = ndb.DateTimeProperty(auto_now_add=True)
+    updated = ndb.DateTimeProperty(auto_now=True)
+    name = ndb.StringProperty(required=True)
+    profile_url = ndb.StringProperty(required=True)
+    access_token = ndb.StringProperty(required=True)
+
+class Feed(ndb.Model):
+    message = ndb.TextProperty(required=True)
+    full_picture = ndb.StringProperty()
+    created_time = ndb.StringProperty(required=True)
+    link = ndb.StringProperty()
 
 #템플릿 프레임워크 환경 설정
 
@@ -116,7 +122,7 @@ class BaseHandler(webapp.RequestHandler):
             self._current_user = None
             user_id = parse_cookie(self.request.cookies.get("fb_user"))
             if user_id:
-                self._current_user = User.get_by_key_name(user_id)
+                self._current_user = User.get_by_id(user_id)
         return self._current_user
 
 
@@ -221,9 +227,8 @@ class GroupsGraphApiHandler(BaseHandler):
             logging.info("verify access_token")
             logging.info(user.access_token)
             token=user.access_token
-
-            graphApi = "https://graph.facebook.com/" + GROUP_ID + "?fields=feed.limit(100)&method=GET&format=json&suppress_http_code=1&access_token=" + str(token)
-            logging.info(graphApi)
+            url = "https://graph.facebook.com/" + GROUP_ID + "?fields=feed.limit(100){message,full_picture,created_time,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(token)
+            graphApi = url
             file = urllib2.urlopen(graphApi)
             content = json.loads(file.read())
 
@@ -231,7 +236,7 @@ class GroupsGraphApiHandler(BaseHandler):
             if "error" in content:
                 if content["error"]["code"] == 613:
                     time.sleep(200)
-                    file = urllib2.urlopen("https://graph.facebook.com/" + GROUP_ID + "?fields=feed&method=GET&format=json&suppress_http_code=1&access_token=" + str(token))
+                    file = urllib2.urlopen("https://graph.facebook.com/" + GROUP_ID + "?feed.limit(3){message,full_picture,created_time,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(token))
                     content = json.loads(file.read())
 
             previous = content["feed"]["paging"]["next"]
@@ -243,13 +248,15 @@ class GroupsGraphApiHandler(BaseHandler):
 
 
         for x in range(0, len(content["feed"]["data"])):
-            NewsFeedMessage +=  '<hr />' +content["feed"]["data"][x]["message"]
-            content["feed"]["data"][x]["message"]
-            
+            row = content["feed"]["data"][x];
+            NewsFeedMessage +=  '<hr />' +row["message"]
+            feed = Feed(
+                message = row.get('message') or '',
+                full_picture= row.get('full_picture') or '', 
+                created_time=row['created_time'],
+                link = row.get('link') or '')
+            feed.put()
         self.response.write(NewsFeedMessage+'<hr >')
-
-        #self.response.write(NewsFeedData.replace('%u',r'\u').decode("unicode_escape"))    
-      
 
 def safe_str(obj):
     """ return the byte string representation of obj """
