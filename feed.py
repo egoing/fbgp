@@ -233,7 +233,9 @@ class GroupsGraphApiHandler(BaseHandler):
         if "error" in content:
             if content["error"]["code"] == 613:
                 time.sleep(200)
-                file = urllib2.urlopen("https://graph.facebook.com/" + GROUP_ID + "?feed.limit(1){message,full_picture,created_time,created_time,id,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(token))
+                logging.info("error " + content["error"]["code"])
+                file = urllib2.urlopen(url)
+                
                 content = json.loads(file.read())
 
         previous = content["feed"]["paging"]["next"]
@@ -247,9 +249,7 @@ class GroupsGraphApiHandler(BaseHandler):
         for x in range(0, len(content["feed"]["data"])):
             row = content["feed"]["data"][x];
             '''
-            q = db.GqlQuery('SELECT count(*) From Feed WHERE id =  ? AND updated_time = ?',
-                ancestor_key,
-                last_seen_key)
+            글을 데이타베이스에 넣기 전에 중복 여부 체크 후 저장
             '''
             NewsFeedMessage +=  '<hr />' +row["message"]
             feed = Feed(
