@@ -37,7 +37,6 @@ Using JavaScript is recommended if it is feasible for your application,
 as it handles some complex authentication states that can only be detected
 in client-side code.
 """
-import facebook
 
 import webapp2
 import jinja2
@@ -100,9 +99,11 @@ class User(ndb.Model):
     access_token = ndb.StringProperty(required=True)
 
 class Feed(ndb.Model):
+    id = ndb.StringProperty(required=True)
     message = ndb.TextProperty(required=True)
     full_picture = ndb.StringProperty()
     created_time = ndb.StringProperty(required=True)
+    updated_time = ndb.StringProperty(required=True)
     link = ndb.StringProperty()
 
 #템플릿 프레임워크 환경 설정
@@ -222,38 +223,41 @@ class GroupsGraphApiHandler(BaseHandler):
     def get(self) :
         
         #iself.response.write("groupsGraphAPI Call")
-        user = self.current_user
-        if user:
-            logging.info("verify access_token")
-            logging.info(user.access_token)
-            token=user.access_token
-            url = "https://graph.facebook.com/" + GROUP_ID + "?fields=feed.limit(10){message,full_picture,created_time,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(token)
-            graphApi = url
-            file = urllib2.urlopen(graphApi)
-            content = json.loads(file.read())
+        url = "https://graph.facebook.com/" + GROUP_ID + "?fields=feed.limit(10){message,full_picture,created_time,updated_time,id,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(User.query().get().access_token)
+        graphApi = url
+        logging.info(url)
+        file = urllib2.urlopen(graphApi)
+        content = json.loads(file.read())
 
-            #에러 처리
-            if "error" in content:
-                if content["error"]["code"] == 613:
-                    time.sleep(200)
-                    file = urllib2.urlopen("https://graph.facebook.com/" + GROUP_ID + "?feed.limit(3){message,full_picture,created_time,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(token))
-                    content = json.loads(file.read())
+        #에러 처리
+        if "error" in content:
+            if content["error"]["code"] == 613:
+                time.sleep(200)
+                file = urllib2.urlopen("https://graph.facebook.com/" + GROUP_ID + "?feed.limit(1){message,full_picture,created_time,created_time,id,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(token))
+                content = json.loads(file.read())
 
-            previous = content["feed"]["paging"]["next"]
-            NewsFeed = content["feed"]
+        previous = content["feed"]["paging"]["next"]
+        NewsFeed = content["feed"]
 
-            logging.info("previous : " + previous)
+        logging.info("previous : " + previous)
 
         NewsFeedMessage = '<b>message</b>'
 
 
         for x in range(0, len(content["feed"]["data"])):
             row = content["feed"]["data"][x];
+            '''
+            q = db.GqlQuery('SELECT count(*) From Feed WHERE id =  ? AND updated_time = ?',
+                ancestor_key,
+                last_seen_key)
+            '''
             NewsFeedMessage +=  '<hr />' +row["message"]
             feed = Feed(
+                id = row.get('id') or '',
                 message = row.get('message') or '',
                 full_picture= row.get('full_picture') or '', 
                 created_time=row['created_time'],
+                updated_time=row['updated_time'],
                 link = row.get('link') or '')
             feed.put()
         self.response.write(NewsFeedMessage+'<hr >')
