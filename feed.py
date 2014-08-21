@@ -99,7 +99,8 @@ class User(ndb.Model):
     access_token = ndb.StringProperty(required=True)
 
 class Config(ndb.Model):
-    last_synced_time = ndb.StringProperty()
+    key = ndb.StringProperty(required=True)
+    value = ndb.TextProperty(required=True)
 
 class Feed(ndb.Model):
     id = ndb.StringProperty(required=True)
@@ -246,14 +247,14 @@ class GroupsGraphApiHandler(BaseHandler):
         logging.info("previous : " + previous)
 
         NewsFeedMessage = '<b>message</b>'
-        
-        config = Config.query().get()
+        config = Config.query(Config.key == 'last_synced_time').get();
         if config:
-            last_synced_time = strptime(config.last_synced_time, "%Y-%m-%dT%H:%M:%S+0000")
-        else :
+            last_synced_time = strptime(config.value, "%Y-%m-%dT%H:%M:%S+0000")
+        else:
             last_synced_time = strptime("1979", "%Y")
 
         max_created_time = last_synced_time;
+
         for row in content["feed"]["data"]:
             entry_created_time = strptime(row['created_time'], "%Y-%m-%dT%H:%M:%S+0000")
             logging.info(last_synced_time)
@@ -274,16 +275,12 @@ class GroupsGraphApiHandler(BaseHandler):
             feed.put()
             max_created_time = max(max_created_time, entry_created_time)
 
-        logging.info('+++')
-        logging.info(max_created_time)
-        logging.info(strftime("%Y-%m-%dT%H:%M:%S+0000", max_created_time))
         if config:
-            logging.info('a')
-            config.last_synced_time = strftime("%Y-%m-%dT%H:%M:%S+0000", max_created_time)
+            config.value = strftime("%Y-%m-%dT%H:%M:%S+0000", max_created_time)
             config.put()
         else:
-            logging.info('b')
-            Config(last_synced_time=strftime("%Y-%m-%dT%H:%M:%S+0000", max_created_time)).put()
+            Config(key='last_synced_time', value=strftime("%Y-%m-%dT%H:%M:%S+0000", max_created_time)).put()
+
 
         self.response.write(NewsFeedMessage+'<hr >')
 
