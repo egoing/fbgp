@@ -98,6 +98,9 @@ class User(ndb.Model):
     profile_url = ndb.StringProperty(required=True)
     access_token = ndb.StringProperty(required=True)
 
+class Config(ndb.Model):
+    last_synced_time = ndb.StringProperty()
+
 class Feed(ndb.Model):
     id = ndb.StringProperty(required=True)
     message = ndb.TextProperty(required=True)
@@ -220,8 +223,9 @@ class GroupsFqlHandler(BaseHandler):
 
 
 class GroupsGraphApiHandler(BaseHandler):
+
     def get(self) :
-        
+        from time import strptime, strftime     
         #iself.response.write("groupsGraphAPI Call")
         url = "https://graph.facebook.com/" + GROUP_ID + "?fields=feed.limit(10){message,full_picture,created_time,updated_time,id,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(User.query().get().access_token)
         graphApi = url
@@ -242,15 +246,23 @@ class GroupsGraphApiHandler(BaseHandler):
         logging.info("previous : " + previous)
 
         NewsFeedMessage = '<b>message</b>'
+        
+        config = Config.query().get()
+        if config:
+            last_synced_time = strptime(config.last_synced_time, "%Y-%m-%dT%H:%M:%S+0000")
+        else :
+            last_synced_time = strptime("1979", "%Y")
 
+        max_created_time = last_synced_time;
+        for row in content["feed"]["data"]:
+            entry_created_time = strptime(row['created_time'], "%Y-%m-%dT%H:%M:%S+0000")
+            logging.info(last_synced_time)
+            logging.info(entry_created_time)
+            logging.info(last_synced_time >= entry_created_time)
+            if last_synced_time >= entry_created_time:
+                logging.info('skip')
+                continue
 
-        for x in range(0, len(content["feed"]["data"])):
-            row = content["feed"]["data"][x];
-            '''
-            q = db.GqlQuery('SELECT count(*) From Feed WHERE id =  ? AND updated_time = ?',
-                ancestor_key,
-                last_seen_key)
-            '''
             NewsFeedMessage +=  '<hr />' +row["message"]
             feed = Feed(
                 id = row.get('id') or '',
@@ -260,7 +272,33 @@ class GroupsGraphApiHandler(BaseHandler):
                 updated_time=row['updated_time'],
                 link = row.get('link') or '')
             feed.put()
+            max_created_time = max(max_created_time, entry_created_time)
+
+        logging.info('+++')
+        logging.info(max_created_time)
+        logging.info(strftime("%Y-%m-%dT%H:%M:%S+0000", max_created_time))
+        if config:
+            logging.info('a')
+            config.last_synced_time = strftime("%Y-%m-%dT%H:%M:%S+0000", max_created_time)
+            config.put()
+        else:
+            logging.info('b')
+            Config(last_synced_time=strftime("%Y-%m-%dT%H:%M:%S+0000", max_created_time)).put()
+
         self.response.write(NewsFeedMessage+'<hr >')
+
+class TestHandler(BaseHandler):
+    def get(self):
+        from time import strptime
+        a = strptime('2002', '%Y');
+        b = strptime('2011', '%Y')
+        logging.info(max(a,b))
+        return;
+        config = Config.query().get()
+        if config:
+            logging.info(config)
+        else:
+            Config(synced_time='8888').put()
 
 def safe_str(obj):
     """ return the byte string representation of obj """
@@ -330,7 +368,7 @@ def cookie_signature(*parts):
 
 
 app = webapp2.WSGIApplication(
-    [('/', HomeHandler), ('/auth/logout', LogoutHandler), ("/auth/login", LoginHandler), ('/groups', GroupsFqlHandler), ('/groups_api', GroupsGraphApiHandler)],
+    [('/', HomeHandler), ('/auth/logout', LogoutHandler), ("/auth/login", LoginHandler), ('/groups', GroupsFqlHandler), ('/groups_api', GroupsGraphApiHandler), ('/t', TestHandler)],
     debug=True,
     config=config
 )
