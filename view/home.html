@@ -1,8 +1,14 @@
+<div class="home">
 {% extends "/view/base.html" %}
 {% block content %}
 {% autoescape true %}
+<table class="table">
 {% for feed in feeds %}
-<li>a<li>
+    <tr>
+        <td>{{feed.message}}</td>
+    </tr>
 {% endfor%}
+</table>
 {% endautoescape %}
 {% endblock %}
+</div>

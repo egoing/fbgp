@@ -96,9 +96,8 @@ class HomeHandler(BaseHandler):
             args = dict(current_user=self.current_user)
         else:
             args = {}
-        template = JINJA_ENVIRONMENT.get_template('/view/oauth.html')
-        #feeds = Feed.query().fetch()
-        
+        args['feeds'] = Feed.query().fetch()
+        template = JINJA_ENVIRONMENT.get_template('/view/home.html')
         self.response.write(template.render(args))
 
 
