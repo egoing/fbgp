@@ -78,12 +78,11 @@ class Graph(object):
         result = self.refreshToken(webapp2_obj);
         logging.info(result);
         if result:
-            webapp2_obj.redirect("/")
+            return False
         else:
             args = dict(client_id=FACEBOOK_APP_ID,
                     redirect_uri=webapp2_obj.request.path_url)
-            webapp2_obj.redirect(
-                "https://graph.facebook.com/oauth/authorize?" + urllib.urlencode(args))
+            return args
 
     def refreshToken(self, webapp2_obj):    
        
@@ -145,8 +144,20 @@ class Graph(object):
                                        "?feed.limit(1){message,full_picture,created_time,created_time,id,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(token))
                 return json.loads(file.read())
 
+    '''
+    def post(self)
+        url = "https://graph.facebook.com/" 
+        return json.loads(file.read())
 
+        # 에러 처리
+        if "error" in content:
+            if content["error"]["code"] == 613:
+                time.sleep(200)
+                file = urllib2.urlopen("https://graph.facebook.com/" + GROUP_ID +
+                                       "?feed.limit(1){message,full_picture,created_time,created_time,id,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(token))
+                return json.loads(file.read())
 
+    '''
 
 """그룹에 글을 가져온다. FQL를 이용한다. FQL은 페이스북 API v2.1에서 디플리케션 되었다. 신규로 등록된 어플리케이션 그 이전 버전의 API를 사용하지 못한다.
 자세한 정보 : 

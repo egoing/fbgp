@@ -91,10 +91,15 @@ class HomeHandler(BaseHandler):
 
     def get(self):
         logging.info("순서 먼저 호")
-        args = dict(current_user=self.current_user)
+
+        if self.current_user :
+            args = dict(current_user=self.current_user)
+        else:
+            args = {}
         template = JINJA_ENVIRONMENT.get_template('/view/oauth.html')
-        feeds = Feed.query().fetch()
-        self.response.write(template.render({'feeds': feeds}))
+        #feeds = Feed.query().fetch()
+        
+        self.response.write(template.render(args))
 
 
 # 로그인 담당
@@ -102,7 +107,11 @@ class LoginHandler(BaseHandler):
 
     def get(self):
         graph = Graph()
-        graph.login(self)
+        result = graph.login(self)
+        if not result:
+            self.redirect("/")
+        else:
+            self.redirect("https://graph.facebook.com/oauth/authorize?" + urllib.urlencode(result))
 
 
 class LogoutHandler(BaseHandler):
