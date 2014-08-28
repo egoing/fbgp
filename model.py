@@ -23,3 +23,11 @@ class Feed(ndb.Model):
     created_time = ndb.StringProperty(required=True)
     updated_time = ndb.StringProperty(required=True)
     link = ndb.StringProperty()
+
+class Tag(ndb.Model):
+    name = ndb.StringProperty(required=True)
+    official = ndb.BooleanProperty(required=True, default=False)
+
+class TagRelation(ndb.Model):
+    feed = ndb.KeyProperty(kind=Feed)
+    tag = ndb.KeyProperty(kind=Tag)

@@ -124,6 +124,7 @@ class GroupsGraphApiHandler(BaseHandler):
 
     def get(self):
         from time import strptime, strftime
+        import re
         graph = Graph()
         content = graph.groups()
 
@@ -158,7 +159,16 @@ class GroupsGraphApiHandler(BaseHandler):
                 created_time=row['created_time'],
                 updated_time=row['updated_time'],
                 link=row.get('link') or '')
-            feed.put()
+            feedRef = feed.put()
+            tags = re.findall('#.+?(?=\s)', row['message'])
+            for tag in tags:
+                tagRef = Tag.query(Tag.name==tag).get()
+                if not tagRef:
+                    tagRef = Tag(name=tag.lower(), official=False).put()
+                TagRelation(feed=feedRef, tag=tagRef).put()
+            
+            #for tag in tags:
+            #   Tag(feed=feedRef, tag=)
             max_created_time = max(max_created_time, entry_created_time)
         if config:
             config.value = strftime("%Y-%m-%dT%H:%M:%S+0000", max_created_time)
@@ -185,17 +195,17 @@ class AccessTokenHandler(BaseHandler):
 class TestHandler(BaseHandler):
 
     def get(self):
-        from time import strptime
-        a = strptime('2002', '%Y')
-        b = strptime('2011', '%Y')
-        logging.info(max(a, b))
+        tag = '#java'
+        feedRef = Feed.query().get()
+        logging.info(type(feedRef))
         return
-        config = Config.query().get()
-        if config:
-            logging.info(config)
-        else:
-            Config(synced_time='8888').put()
-
+        tagRef = Tag.query(Tag.name=="#Java").get()
+        if not tagRef:
+            tagRef = Tag(name=tag.lower(), official=False).put()
+        logging.info(feedRef)
+        logging.info(tagRef)
+        TagRelation(feed=feedRef, tag=tagRef).put()
+        
 
 app = webapp2.WSGIApplication(
     [('/', HomeHandler), ('/auth/logout', LogoutHandler), ("/auth/login", LoginHandler),
