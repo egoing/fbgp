@@ -25,18 +25,7 @@
     :license: 
 """
 
-"""A barebones AppEngine application that uses Facebook for login.
 
-This application uses OAuth 2.0 directly rather than relying on Facebook's
-JavaScript SDK for login. It also accesses the Facebook Graph API directly
-rather than using the Python SDK. It is designed to illustrate how easy
-it is to use the Facebook Platform without any third party code.
-
-See the "appengine" directory for an example using the JavaScript SDK.
-Using JavaScript is recommended if it is feasible for your application,
-as it handles some complex authentication states that can only be detected
-in client-side code.
-"""
 from facebook import Graph
 from controller import *
 
@@ -90,12 +79,11 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 class HomeHandler(BaseHandler):
 
     def get(self):
-        logging.info("순서 먼저 호")
-
         if self.current_user :
             args = dict(current_user=self.current_user)
         else:
             args = {}
+
         args['feeds'] = Feed.query().fetch()
         template = JINJA_ENVIRONMENT.get_template('/view/home.html')
         self.response.write(template.render(args))
@@ -159,6 +147,7 @@ class GroupsGraphApiHandler(BaseHandler):
                 created_time=row['created_time'],
                 updated_time=row['updated_time'],
                 link=row.get('link') or '')
+
             feedRef = feed.put()
             tags = re.findall('#.+?(?=\s)', row['message'])
             for tag in tags:
@@ -166,9 +155,8 @@ class GroupsGraphApiHandler(BaseHandler):
                 if not tagRef:
                     tagRef = Tag(name=tag.lower(), official=False).put()
                 TagRelation(feed=feedRef, tag=tagRef).put()
-            
-            #for tag in tags:
-            #   Tag(feed=feedRef, tag=)
+            feed.put()
+
             max_created_time = max(max_created_time, entry_created_time)
         if config:
             config.value = strftime("%Y-%m-%dT%H:%M:%S+0000", max_created_time)
@@ -191,7 +179,6 @@ class AccessTokenHandler(BaseHandler):
             self.response.write("<strong>access token fail</strong>")    
 
         
-
 class TestHandler(BaseHandler):
 
     def get(self):
@@ -206,9 +193,8 @@ class TestHandler(BaseHandler):
         logging.info(tagRef)
         TagRelation(feed=feedRef, tag=tagRef).put()
         
-
 app = webapp2.WSGIApplication(
     [('/', HomeHandler), ('/auth/logout', LogoutHandler), ("/auth/login", LoginHandler),
-     ('/groups_api', GroupsGraphApiHandler), ('/t', TestHandler), ('/refresh_token', AccessTokenHandler)],
+     ('/groups_api', GroupsGraphApiHandler),  ('/refresh_token', AccessTokenHandler)],
     debug=True
 )

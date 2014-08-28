@@ -123,39 +123,35 @@ class Graph(object):
                 "https://graph.facebook.com/oauth/authorize?" + urllib.urlencode(args))
 
 
+    def callFacebookAPI(self, graphAPI):
+
+        file = urllib2.urlopen(graphAPI)
+        return json.loads(file.read())
+
 
 
     def groups(self):
-        #iself.response.write("groupsGraphAPI Call")
 
-        url = "https://graph.facebook.com/" + GROUP_ID + \
-            "?fields=feed.limit(10){message,full_picture,created_time,updated_time,id,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(
+        graphApi = "https://graph.facebook.com/" + GROUP_ID + \
+            "?fields=feed.limit(100){message,full_picture,created_time,updated_time,id,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(
                 User.query().get().access_token)
-        graphApi = url
-        logging.info(url)
-        file = urllib2.urlopen(graphApi)
-        return json.loads(file.read())
+
+        return self.callFacebookAPI(graphApi)
 
         # 에러 처리
         if "error" in content:
             if content["error"]["code"] == 613:
                 time.sleep(200)
-                file = urllib2.urlopen("https://graph.facebook.com/" + GROUP_ID +
-                                       "?feed.limit(1){message,full_picture,created_time,created_time,id,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(token))
-                return json.loads(file.read())
+                return self.callFacebookAPI(graphApi)
 
+
+
+    
     '''
     def post(self)
         url = "https://graph.facebook.com/" 
         return json.loads(file.read())
 
-        # 에러 처리
-        if "error" in content:
-            if content["error"]["code"] == 613:
-                time.sleep(200)
-                file = urllib2.urlopen("https://graph.facebook.com/" + GROUP_ID +
-                                       "?feed.limit(1){message,full_picture,created_time,created_time,id,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(token))
-                return json.loads(file.read())
 
     '''
 
