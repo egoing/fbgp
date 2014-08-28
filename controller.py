@@ -23,7 +23,6 @@ FACEBOOK_APP_ID = _config.FACEBOOK_ID
 FACEBOOK_SECRET = _config.FACEBOOK_SECRET
 FQL_ACCESS_TOKEN = _config.FQL_ACCESS_TOKEN
 GROUP_ID = _config.GROUP_ID
-logging.info('FACEBOOK_SECRET, '+FACEBOOK_SECRET)
 
 
 class BaseHandler(webapp2.RequestHandler):
@@ -49,11 +48,9 @@ def parse_cookie(value):
     if len(parts) != 3:
         return None
     if cookie_signature(parts[0], parts[1]) != parts[2]:
-        logging.warning("Invalid cookie signature %r", value)
         return None
     timestamp = int(parts[1])
     if timestamp < time.time() - 30 * 86400:
-        logging.warning("Expired cookie %r", value)
         return None
     try:
         return base64.b64decode(parts[0]).strip()

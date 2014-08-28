@@ -78,13 +78,23 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 
 class HomeHandler(BaseHandler):
 
-    def get(self):
+    def get(self, tag=None):
         if self.current_user :
             args = dict(current_user=self.current_user)
         else:
             args = {}
-
-        args['feeds'] = Feed.query().fetch()
+        if tag:
+            tagRef = Tag.query(Tag.name == tag).get()
+            if not tagRef:
+                template = JINJA_ENVIRONMENT.get_template('/view/nodata.html')
+                return;        
+            trRef = TagRelation.query(TagRelation.tag == tagRef.key).fetch()
+            args['feeds'] = []
+            for x in trRef:
+                args['feeds'].append(x.feed.get())
+        else:
+            args['feeds'] = Feed.query().fetch()
+        args['tags'] = Tag.query().fetch()
         template = JINJA_ENVIRONMENT.get_template('/view/home.html')
         self.response.write(template.render(args))
 
@@ -119,7 +129,6 @@ class GroupsGraphApiHandler(BaseHandler):
         previous = content["feed"]["paging"]["next"]
         NewsFeed = content["feed"]
 
-        logging.info("previous : " + previous)
 
         NewsFeedMessage = '<b>message</b>'
         config = Config.query(Config.key == 'last_synced_time').get()
@@ -129,17 +138,14 @@ class GroupsGraphApiHandler(BaseHandler):
             last_synced_time = strptime("1979", "%Y")
 
         max_created_time = last_synced_time
-
         for row in content["feed"]["data"]:
             entry_created_time = strptime(
                 row['created_time'], "%Y-%m-%dT%H:%M:%S+0000")
-            logging.info(last_synced_time)
-            logging.info(entry_created_time)
-            logging.info(last_synced_time >= entry_created_time)
             if last_synced_time >= entry_created_time:
-                logging.info('skip')
                 continue
-            NewsFeedMessage += '<hr />' + row["message"]
+
+            NewsFeedMessage += '<hr />' + (row.get('message') or '')
+
             feed = Feed(
                 id=row.get('id') or '',
                 message=row.get('message') or '',
@@ -148,15 +154,24 @@ class GroupsGraphApiHandler(BaseHandler):
                 updated_time=row['updated_time'],
                 link=row.get('link') or '')
 
-            feedRef = feed.put()
-            tags = re.findall('#.+?(?=\s)', row['message'])
+            feedKey = feed.put()
+            p = re.compile(ur'#.+?(?=\s|$)')
+            tags = re.findall(p, row.get('message') or '')
             for tag in tags:
+                tag = tag.lower()[1:]
                 tagRef = Tag.query(Tag.name==tag).get()
-                if not tagRef:
-                    tagRef = Tag(name=tag.lower(), official=False).put()
-                TagRelation(feed=feedRef, tag=tagRef).put()
-            feed.put()
-
+                logging.info("+++++++")
+                logging.info(tag)
+                logging.info(tagRef)
+                logging.info("-------")
+                if tagRef:
+                    tagKey = tagRef.key   
+                else:
+                    tagKey = Tag(name=tag, official=False).put()
+                trRef = TagRelation();
+                trRef.tag = tagKey;
+                trRef.feed = feedKey;
+                trRef.put();
             max_created_time = max(max_created_time, entry_created_time)
         if config:
             config.value = strftime("%Y-%m-%dT%H:%M:%S+0000", max_created_time)
@@ -183,18 +198,16 @@ class TestHandler(BaseHandler):
 
     def get(self):
         tag = '#java'
-        feedRef = Feed.query().get()
-        logging.info(type(feedRef))
+        tagRefGet = Tag.query().get()
+        tagRefPut = Tag(name=tag).put()
         return
         tagRef = Tag.query(Tag.name=="#Java").get()
         if not tagRef:
             tagRef = Tag(name=tag.lower(), official=False).put()
-        logging.info(feedRef)
-        logging.info(tagRef)
         TagRelation(feed=feedRef, tag=tagRef).put()
         
 app = webapp2.WSGIApplication(
-    [('/', HomeHandler), ('/auth/logout', LogoutHandler), ("/auth/login", LoginHandler),
-     ('/groups_api', GroupsGraphApiHandler),  ('/refresh_token', AccessTokenHandler)],
+    [('/', HomeHandler), ('/feed', HomeHandler), ('/feed/(.+)', HomeHandler), ('/auth/logout', LogoutHandler), ("/auth/login", LoginHandler),
+     ('/groups_api', GroupsGraphApiHandler),  ('/refresh_token', AccessTokenHandler, ('/t', TestHandler))],
     debug=True
 )

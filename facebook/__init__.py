@@ -76,7 +76,6 @@ class Graph(object):
             # and cache a local instance of the 로컬 DAO에 프로필정보를 담는다.
             # basic profile info
         result = self.refreshToken(webapp2_obj);
-        logging.info(result);
         if result:
             return False
         else:
@@ -112,7 +111,6 @@ class Graph(object):
                 '''
                 에러 로그 기록 , into db or file
                 '''
-                logging.info(e)
                 return False
             else:
                 pass
@@ -133,7 +131,7 @@ class Graph(object):
     def groups(self):
 
         graphApi = "https://graph.facebook.com/" + GROUP_ID + \
-            "?fields=feed.limit(100){message,full_picture,created_time,updated_time,id,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(
+            "?fields=feed.limit(5){message,full_picture,created_time,updated_time,id,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(
                 User.query().get().access_token)
 
         return self.callFacebookAPI(graphApi)
