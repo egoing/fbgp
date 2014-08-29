@@ -56,7 +56,6 @@ from model import *
 from cookie import *
 
 
-
 import time
 import re
 
@@ -65,7 +64,6 @@ from webapp2_extras import sessions
 from google.appengine.api import lib_config
 
 import logging
-
 
 
 # 템플릿 프레임워크 환경 설정
@@ -79,7 +77,7 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 class HomeHandler(BaseHandler):
 
     def get(self, tag=None):
-        if self.current_user :
+        if self.current_user:
             args = dict(current_user=self.current_user)
         else:
             args = {}
@@ -87,7 +85,7 @@ class HomeHandler(BaseHandler):
             tagRef = Tag.query(Tag.name == tag).get()
             if not tagRef:
                 template = JINJA_ENVIRONMENT.get_template('/view/nodata.html')
-                return;        
+                return
             trRef = TagRelation.query(TagRelation.tag == tagRef.key).fetch()
             args['feeds'] = []
             for x in trRef:
@@ -99,6 +97,25 @@ class HomeHandler(BaseHandler):
         self.response.write(template.render(args))
 
 
+class FeedDataHandler(BaseHandler):
+
+    def get(self, tag=None, cursor=None):
+        from google.appengine.datastore.datastore_query import Cursor
+        import json
+        tagRef = Tag.query(Tag.name == tag).get()
+        curs = Cursor(urlsafe=self.request.get('cursor'))
+        trRef, next_curs, more = TagRelation.query(TagRelation.tag == tagRef.key).fetch_page(2, start_cursor = curs)
+        args = {}
+        feeds = []
+        for tr in trRef:
+            feeds.append(tr.feed.get().to_dict())
+        args['feeds'] = feeds;
+        args['cursor'] = next_curs.urlsafe();
+        args['more'] = more;
+        self.response.write(json.dumps(args))
+        pass
+
+
 # 로그인 담당
 class LoginHandler(BaseHandler):
 
@@ -108,7 +125,8 @@ class LoginHandler(BaseHandler):
         if not result:
             self.redirect("/")
         else:
-            self.redirect("https://graph.facebook.com/oauth/authorize?" + urllib.urlencode(result))
+            self.redirect(
+                "https://graph.facebook.com/oauth/authorize?" + urllib.urlencode(result))
 
 
 class LogoutHandler(BaseHandler):
@@ -128,7 +146,6 @@ class GroupsGraphApiHandler(BaseHandler):
 
         previous = content["feed"]["paging"]["next"]
         NewsFeed = content["feed"]
-
 
         NewsFeedMessage = '<b>message</b>'
         config = Config.query(Config.key == 'last_synced_time').get()
@@ -159,19 +176,19 @@ class GroupsGraphApiHandler(BaseHandler):
             tags = re.findall(p, row.get('message') or '')
             for tag in tags:
                 tag = tag.lower()[1:]
-                tagRef = Tag.query(Tag.name==tag).get()
+                tagRef = Tag.query(Tag.name == tag).get()
                 logging.info("+++++++")
                 logging.info(tag)
                 logging.info(tagRef)
                 logging.info("-------")
                 if tagRef:
-                    tagKey = tagRef.key   
+                    tagKey = tagRef.key
                 else:
                     tagKey = Tag(name=tag, official=False).put()
-                trRef = TagRelation();
-                trRef.tag = tagKey;
-                trRef.feed = feedKey;
-                trRef.put();
+                trRef = TagRelation()
+                trRef.tag = tagKey
+                trRef.feed = feedKey
+                trRef.put()
             max_created_time = max(max_created_time, entry_created_time)
         if config:
             config.value = strftime("%Y-%m-%dT%H:%M:%S+0000", max_created_time)
@@ -191,9 +208,9 @@ class AccessTokenHandler(BaseHandler):
         if graph.refreshToken(self):
             self.response.write("<strong>access token issue</strong>")
         else:
-            self.response.write("<strong>access token fail</strong>")    
+            self.response.write("<strong>access token fail</strong>")
 
-        
+
 class TestHandler(BaseHandler):
 
     def get(self):
@@ -201,13 +218,20 @@ class TestHandler(BaseHandler):
         tagRefGet = Tag.query().get()
         tagRefPut = Tag(name=tag).put()
         return
-        tagRef = Tag.query(Tag.name=="#Java").get()
+        tagRef = Tag.query(Tag.name == "#Java").get()
         if not tagRef:
             tagRef = Tag(name=tag.lower(), official=False).put()
         TagRelation(feed=feedRef, tag=tagRef).put()
-        
+
 app = webapp2.WSGIApplication(
-    [('/', HomeHandler), ('/feed', HomeHandler), ('/feed/(.+)', HomeHandler), ('/auth/logout', LogoutHandler), ("/auth/login", LoginHandler),
-     ('/groups_api', GroupsGraphApiHandler),  ('/refresh_token', AccessTokenHandler, ('/t', TestHandler))],
-    debug=True
+    [
+        ('/', HomeHandler),
+        ('/feed', HomeHandler),
+        ('/feed/(.+)', HomeHandler),
+        ('/feeddata/(.+)/(.+)', FeedDataHandler),
+        ('/auth/logout', LogoutHandler),
+        ("/auth/login", LoginHandler),
+        ('/groups_api', GroupsGraphApiHandler),
+        ('/refresh_token', AccessTokenHandler, ('/t', TestHandler))],
+        debug=True
 )
