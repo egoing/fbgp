@@ -25,6 +25,7 @@ FQL_ACCESS_TOKEN = _config.FQL_ACCESS_TOKEN
 GROUP_ID = _config.GROUP_ID
 
 
+
 class BaseHandler(webapp2.RequestHandler):
 
     @property

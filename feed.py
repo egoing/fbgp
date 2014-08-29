@@ -93,18 +93,22 @@ class HomeHandler(BaseHandler):
         else:
             args['feeds'] = Feed.query().fetch()
         args['tags'] = Tag.query().fetch()
+        args['tag'] = tag
         template = JINJA_ENVIRONMENT.get_template('/view/home.html')
         self.response.write(template.render(args))
 
 
 class FeedDataHandler(BaseHandler):
 
-    def get(self, tag=None, cursor=None):
+    def post(self, tag=None, cursor=None):
         from google.appengine.datastore.datastore_query import Cursor
         import json
-        tagRef = Tag.query(Tag.name == tag).get()
         curs = Cursor(urlsafe=self.request.get('cursor'))
-        trRef, next_curs, more = TagRelation.query(TagRelation.tag == tagRef.key).fetch_page(2, start_cursor = curs)
+        if tag == None or tag == 'None' : 
+            trRef, next_curs, more = TagRelation.query().fetch_page(20, start_cursor = curs)
+        else:
+            tagRef = Tag.query(Tag.name == tag).get()
+            trRef, next_curs, more = TagRelation.query(TagRelation.tag == tagRef.key).fetch_page(2, start_cursor = curs)
         args = {}
         feeds = []
         for tr in trRef:
@@ -177,10 +181,6 @@ class GroupsGraphApiHandler(BaseHandler):
             for tag in tags:
                 tag = tag.lower()[1:]
                 tagRef = Tag.query(Tag.name == tag).get()
-                logging.info("+++++++")
-                logging.info(tag)
-                logging.info(tagRef)
-                logging.info("-------")
                 if tagRef:
                     tagKey = tagRef.key
                 else:
@@ -228,7 +228,7 @@ app = webapp2.WSGIApplication(
         ('/', HomeHandler),
         ('/feed', HomeHandler),
         ('/feed/(.+)', HomeHandler),
-        ('/feeddata/(.+)/(.+)', FeedDataHandler),
+        ('/feeddata/(.+)/(.?)', FeedDataHandler),
         ('/auth/logout', LogoutHandler),
         ("/auth/login", LoginHandler),
         ('/groups_api', GroupsGraphApiHandler),

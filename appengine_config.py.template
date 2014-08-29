@@ -4,3 +4,5 @@ main_FACEBOOK_SECRET = ''
 main_FQL_ACCESS_TOKEN = ''
 
 main_GROUP_ID = ''
+
+main_FEED_PAGE_SCALE = 100

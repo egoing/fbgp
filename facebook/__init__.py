@@ -58,7 +58,7 @@ sys.setdefaultencoding('utf-8')
 
 
 _config = lib_config.register(
-    'main', {'FACEBOOK_ID': None, 'FACEBOOK_SECRET': None, 'FQL_ACCESS_TOKEN': None, 'GROUP_ID': None})
+    'main', {'FACEBOOK_ID': None, 'FACEBOOK_SECRET': None, 'FQL_ACCESS_TOKEN': None, 'GROUP_ID': None, 'FEED_PAGE_SCALE' : 10})
 
 # 페이스북 앱 정보
 
@@ -66,6 +66,7 @@ FACEBOOK_APP_ID = _config.FACEBOOK_ID
 FACEBOOK_SECRET = _config.FACEBOOK_SECRET
 FQL_ACCESS_TOKEN = _config.FQL_ACCESS_TOKEN
 GROUP_ID = _config.GROUP_ID
+FEED_PAGE_SCALE = _config.FEED_PAGE_SCALE
 
 
 class Graph(object):
@@ -131,7 +132,7 @@ class Graph(object):
     def groups(self):
 
         graphApi = "https://graph.facebook.com/" + GROUP_ID + \
-            "?fields=feed.limit(5){message,full_picture,created_time,updated_time,id,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(
+            "?fields=feed.limit("+str(FEED_PAGE_SCALE)+"){message,full_picture,created_time,updated_time,id,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(
                 User.query().get().access_token)
 
         return self.callFacebookAPI(graphApi)
