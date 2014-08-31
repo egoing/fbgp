@@ -20,8 +20,8 @@ class Feed(ndb.Model):
     id = ndb.StringProperty(required=True)
     message = ndb.TextProperty(required=True)
     full_picture = ndb.StringProperty()
-    created_time = ndb.StringProperty(required=True)
-    updated_time = ndb.StringProperty(required=True)
+    created_time = ndb.DateTimeProperty(required=True)
+    updated_time = ndb.DateTimeProperty(required=True)
     link = ndb.StringProperty()
 
 class Tag(ndb.Model):
@@ -29,5 +29,6 @@ class Tag(ndb.Model):
     official = ndb.BooleanProperty(required=True, default=False)
 
 class TagRelation(ndb.Model):
-    feed = ndb.KeyProperty(kind=Feed)
-    tag = ndb.KeyProperty(kind=Tag)
+    feed = ndb.KeyProperty(kind=Feed, required=True)
+    tag = ndb.KeyProperty(kind=Tag, required=True)
+    created_time = ndb.DateTimeProperty(required=True)

@@ -28,10 +28,12 @@
 
 from facebook import Graph
 from controller import *
+from helper import *
 
 import webapp2
 import jinja2
 import os
+
 
 import base64
 import cgi
@@ -99,20 +101,32 @@ class HomeHandler(BaseHandler):
 
 
 class FeedDataHandler(BaseHandler):
-
+    def _content_pretty(self, input):
+        return autolink(input.replace('\n', '<br />'))
+    def _objectfy(self, feed):
+        obj = {}
+        obj['message'] = self._content_pretty(feed.message)
+        obj['created_time'] = feed.created_time.strftime('%Y-%m-%dT%H:%M:%S+0000');
+        obj['updated_time'] = feed.updated_time.strftime('%Y-%m-%dT%H:%M:%S+0000');
+        obj['id'] = feed.id
+        obj['full_picture'] = feed.full_picture
+        return obj;
     def post(self, tag=None, cursor=None):
         from google.appengine.datastore.datastore_query import Cursor
         import json
         curs = Cursor(urlsafe=self.request.get('cursor'))
+        feeds = []
         if tag == None or tag == 'None' : 
-            trRef, next_curs, more = TagRelation.query().fetch_page(20, start_cursor = curs)
+            feedRef, next_curs, more = Feed.query().fetch_page(20, start_cursor = curs)
+            for feed in feedRef:
+                feeds.append(self._objectfy(feed))
         else:
             tagRef = Tag.query(Tag.name == tag).get()
-            trRef, next_curs, more = TagRelation.query(TagRelation.tag == tagRef.key).fetch_page(2, start_cursor = curs)
+            trRef, next_curs, more = TagRelation.query(TagRelation.tag == tagRef.key).fetch_page(20, start_cursor = curs)
+            for row in trRef:
+                feed = row.feed.get();
+                feeds.append(self._objectfy(feed))
         args = {}
-        feeds = []
-        for tr in trRef:
-            feeds.append(tr.feed.get().to_dict())
         args['feeds'] = feeds;
         args['cursor'] = next_curs.urlsafe();
         args['more'] = more;
@@ -144,35 +158,35 @@ class GroupsGraphApiHandler(BaseHandler):
 
     def get(self):
         from time import strptime, strftime
-        import re
+        import re, datetime
         graph = Graph()
         content = graph.groups()
-
+        
         previous = content["feed"]["paging"]["next"]
         NewsFeed = content["feed"]
 
         NewsFeedMessage = '<b>message</b>'
         config = Config.query(Config.key == 'last_synced_time').get()
         if config:
-            last_synced_time = strptime(config.value, "%Y-%m-%dT%H:%M:%S+0000")
+            last_synced_time = datetime.datetime.strptime(config.value,'%Y-%m-%dT%H:%M:%S+0000')
         else:
-            last_synced_time = strptime("1979", "%Y")
+            last_synced_time = datetime.datetime.strptime('1979','%Y')
 
         max_created_time = last_synced_time
         for row in content["feed"]["data"]:
-            entry_created_time = strptime(
-                row['created_time'], "%Y-%m-%dT%H:%M:%S+0000")
+            entry_created_time = datetime.datetime.strptime(row.get('created_time') or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000')
             if last_synced_time >= entry_created_time:
                 continue
 
             NewsFeedMessage += '<hr />' + (row.get('message') or '')
+            logging.info(datetime.datetime.strptime(row.get('created_time') or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000'))
 
             feed = Feed(
                 id=row.get('id') or '',
                 message=row.get('message') or '',
                 full_picture=row.get('full_picture') or '',
-                created_time=row['created_time'],
-                updated_time=row['updated_time'],
+                created_time=datetime.datetime.strptime(row.get('created_time') or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000'),
+                updated_time=datetime.datetime.strptime(row.get('updated_time') or '1979-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000'),
                 link=row.get('link') or '')
 
             feedKey = feed.put()
@@ -188,15 +202,18 @@ class GroupsGraphApiHandler(BaseHandler):
                 trRef = TagRelation()
                 trRef.tag = tagKey
                 trRef.feed = feedKey
+                trRef.created_time = datetime.datetime.strptime(row['created_time'],'%Y-%m-%dT%H:%M:%S+0000')
                 trRef.put()
             max_created_time = max(max_created_time, entry_created_time)
+        logging.info(type(max_created_time))
+        max_created_time = max_created_time.strftime('%Y-%m-%dT%H:%M:%S+0000')
         if config:
-            config.value = strftime("%Y-%m-%dT%H:%M:%S+0000", max_created_time)
+            config.value = max_created_time
             config.put()
         else:
-            Config(key='last_synced_time', value=strftime(
-                "%Y-%m-%dT%H:%M:%S+0000", max_created_time)).put()
+            Config(key='last_synced_time', value=max_created_time).put()
         self.response.write(NewsFeedMessage + '<hr >')
+            
 
 
 class AccessTokenHandler(BaseHandler):

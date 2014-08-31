@@ -12,6 +12,7 @@ from google.appengine.api import lib_config
 
 from model import *
 from cookie import *
+from google.appengine.api import users
 
 
 _config = lib_config.register(
@@ -40,7 +41,23 @@ class BaseHandler(webapp2.RequestHandler):
                 self._current_user = User.get_by_id(user_id)
         return self._current_user
 
+    def require_admin(self):
+        user = users.get_current_user()
+        if user:
+            if users.is_current_user_admin():
+                return True
+            else:
+                self.redirect('/error?id=1')
+        else:
+            self.redirect(users.create_login_url(self.request.uri))
 
+    def is_admin(self):
+        user = users.get_current_user()    
+        if user and users.is_current_user_admin():
+            return True
+        else:
+            return False
+            
 def parse_cookie(value):
     """Parses and verifies a cookie value from set_cookie"""
     if not value:

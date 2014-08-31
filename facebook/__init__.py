@@ -78,10 +78,12 @@ class Graph(object):
             # basic profile info
         result = self.refreshToken(webapp2_obj);
         if result:
-            return False
+            webapp2_obj.redirect("/")
         else:
             args = dict(client_id=FACEBOOK_APP_ID,
                     redirect_uri=webapp2_obj.request.path_url)
+            webapp2_obj.redirect(
+                "https://graph.facebook.com/oauth/authorize?" + urllib.urlencode(args))
             return args
 
     def refreshToken(self, webapp2_obj):    
@@ -134,7 +136,6 @@ class Graph(object):
         graphApi = "https://graph.facebook.com/" + GROUP_ID + \
             "?fields=feed.limit("+str(FEED_PAGE_SCALE)+"){message,full_picture,created_time,updated_time,id,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(
                 User.query().get().access_token)
-
         return self.callFacebookAPI(graphApi)
 
         # 에러 처리
