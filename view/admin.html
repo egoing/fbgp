@@ -4,8 +4,20 @@
 <div class="admin" id="content">
     <div class="row">
         <div class="col-sm-12">
-            <button type="button" class="btn btn-danger btn-lg" id="login_btn">Login</button>
-            <button type="button" class="btn btn-danger btn-lg" id="reset_btn">Reset</button>
+            <table class="table">
+                <tr>
+                    <td>글수집</td><td class="btn"><a class="btn btn-danger btn-lg" href="/groups_api">Execute</a></td>
+                </tr>
+                <tr>
+                    <td>Login</td><td class="btn"><button type="button" class="btn btn-danger btn-lg" id="login_btn">Execute</button></td>
+                </tr>
+                <tr>
+                    <td>Refresh Access Token</td><td class="btn"><a class="btn btn-danger btn-lg" href="/refresh_token">Execute</a></td>
+                </tr>
+                <tr>
+                    <td>Reset All data</td><td class="btn"><button type="button" class="btn btn-danger btn-lg" id="reset_btn">Execute</button></td>
+                </tr>
+            </table>
         </div>
     </div>
 </div>

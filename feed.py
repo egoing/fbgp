@@ -117,12 +117,12 @@ class FeedDataHandler(BaseHandler):
         curs = Cursor(urlsafe=self.request.get('cursor'))
         feeds = []
         if tag == None or tag == 'None' : 
-            feedRef, next_curs, more = Feed.query().fetch_page(20, start_cursor = curs)
+            feedRef, next_curs, more = Feed.query().order(-Feed.created_time).fetch_page(20, start_cursor = curs)
             for feed in feedRef:
                 feeds.append(self._objectfy(feed))
         else:
             tagRef = Tag.query(Tag.name == tag).get()
-            trRef, next_curs, more = TagRelation.query(TagRelation.tag == tagRef.key).fetch_page(20, start_cursor = curs)
+            trRef, next_curs, more = TagRelation.query(TagRelation.tag == tagRef.key).order(-TagRelation.created_time).fetch_page(20, start_cursor = curs)
             for row in trRef:
                 feed = row.feed.get();
                 feeds.append(self._objectfy(feed))
