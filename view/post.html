@@ -1,0 +1,20 @@
+<div class="post" id="content">
+{% extends "/view/base.html" %}
+{% block content %}
+{% autoescape true %}
+<div class="col-md-2">
+        <ul class="nav nav-pills nav-stacked">
+            <li><a href="/">전체</a>
+        {% for tag in tags %}
+            <li><a href="/feed/{{tag.name}}">#{{tag.name}}</a></li>    
+        {% endfor%}
+        </ul>
+    </div>
+    <div class="col-md-10">
+        {{post.message}}
+        <!-- bind style.js -->
+        <input type="button" id="next_btn" value="next" class="btn btn-primary btn-lg"/>
+    </div>
+{% endautoescape %}
+{% endblock %}
+</div>

@@ -57,7 +57,12 @@ class BaseHandler(webapp2.RequestHandler):
             return True
         else:
             return False
-            
+
+    def tags(self):
+        return Tag.query().fetch()
+
+        
+
 def parse_cookie(value):
     """Parses and verifies a cookie value from set_cookie"""
     if not value:

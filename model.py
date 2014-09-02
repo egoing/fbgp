@@ -23,7 +23,14 @@ class Feed(ndb.Model):
     created_time = ndb.DateTimeProperty(required=True)
     updated_time = ndb.DateTimeProperty(required=True)
     link = ndb.StringProperty()
+    last_comment_sync_time = ndb.DateTimeProperty()
 
+class Comment(ndb.Model):
+    id = ndb.StringProperty(required=True)
+    message = ndb.TextProperty(required=True)
+    created_time = ndb.DateTimeProperty()
+    feed = ndb.KeyProperty(kind=Feed, required=True)
+    
 class Tag(ndb.Model):
     name = ndb.StringProperty(required=True)
     official = ndb.BooleanProperty(required=True, default=False)

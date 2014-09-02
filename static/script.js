@@ -13,10 +13,15 @@ $(document).ready(function(){
                 data:{'cursor':(cursor ? cursor : '' )},
                 success:function(result){
                     var row_str = '';
+                    var row = [];
                     for(var i = 0 ; i < result.feeds.length ; i++){
-                        var feeds = result.feeds;
-                        fp = feeds[i]['full_picture'] ? '<img src="'+feeds[i]['full_picture']+'" />' : ''
-                        row_str +=    '<tr><td>'+feeds[i]['message']+fp+'</td></tr>';
+                        var feed = result.feeds[i];
+                        row_str +=  '<tr><td>'
+                        row_str += feed['full_picture'] ? '<div class="picture"><img src="'+feed['full_picture']+'" /></div>' : '';
+                        row_str += '<div class="message">'+feed['message']+'</div>';
+                        row_str += '<div class="created"><a href="/post/'+feed['id']+'">'+feed['created_time']+'</a></div>';
+                        row_str += '</td></tr>';
+
                     }
                     fl.append(row_str)
                     if(!result.more)

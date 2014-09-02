@@ -5,3 +5,18 @@
 .table tr:first-child td  {
     border-top:none;
 }
+
+.home .picture {
+    float:right;
+}
+
+.home td {
+    padding-top:20px !important;
+    padding-bottom:20px !important;
+    font-size:15px;
+}
+
+.home .created {
+    font-size:12px;
+    padding-top:10px;
+}

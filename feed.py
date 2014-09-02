@@ -75,9 +75,7 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 
 # 메인 클래스
 
-
 class HomeHandler(BaseHandler):
-
     def get(self, tag=None):
         if self.current_user:
             args = dict(current_user=self.current_user)
@@ -94,7 +92,7 @@ class HomeHandler(BaseHandler):
                 args['feeds'].append(x.feed.get())
         else:
             args['feeds'] = Feed.query().fetch()
-        args['tags'] = Tag.query().fetch()
+        args['tags'] = self.tags()
         args['tag'] = tag
         template = JINJA_ENVIRONMENT.get_template('/view/home.html')
         self.response.write(template.render(args))
@@ -213,7 +211,24 @@ class GroupsGraphApiHandler(BaseHandler):
         else:
             Config(key='last_synced_time', value=max_created_time).put()
         self.response.write(NewsFeedMessage + '<hr >')
-            
+
+
+def syncComment(post_id):
+    graph = Graph()
+    post = graph.post(post_id)
+    
+    
+
+class PostHandler(BaseHandler):
+        def get(self, id):
+            args = {}
+            post = Feed.query(Feed.id ==  id).get()
+            args['post'] = post
+            logging.info(post)
+            args['tags'] = self.tags()
+            syncComment(post.id)
+            template = JINJA_ENVIRONMENT.get_template('/view/post.html')
+            self.response.write(template.render(args))
 
 
 class AccessTokenHandler(BaseHandler):
@@ -249,6 +264,7 @@ app = webapp2.WSGIApplication(
         ('/auth/logout', LogoutHandler),
         ("/auth/login", LoginHandler),
         ('/groups_api', GroupsGraphApiHandler),
+        ('/post/(.+)', PostHandler),
         ('/refresh_token', AccessTokenHandler, ('/t', TestHandler))],
         debug=True
 )
