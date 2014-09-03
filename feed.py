@@ -29,6 +29,9 @@
 from facebook import Graph
 from controller import *
 from helper import *
+from time import strptime, strftime
+        
+import re, datetime
 
 import webapp2
 import jinja2
@@ -155,8 +158,7 @@ class LogoutHandler(BaseHandler):
 class GroupsGraphApiHandler(BaseHandler):
 
     def get(self):
-        from time import strptime, strftime
-        import re, datetime
+
         graph = Graph()
         content = graph.groups()
         
@@ -232,6 +234,12 @@ def syncComment(_post):
     import datetime;
     graph = Graph()
     post = graph.post(_post.id)
+    logging.info(post)
+    if 'comments' in post:
+        pass
+    else:
+        return True;
+
     for com in post['comments']['data']:
         #todo last_comment_sync_time에 따라서 동기화 할 것인지 여부를 판단한다. 
         comObj = Comment()
@@ -247,13 +255,19 @@ def syncComment(_post):
             mem.type = 1
             mem.name = com['from']['name']
             mem.social_id = com['from']['id']
-            mem_key = mem.put();
+            logging.info(com['from']['name'])
+            logging.info(com['from']['id'])
+
+
+            
+            mem_key = mem.put();    
         if not mem_key:
             continue
         comObj.member = mem_key
         comObj.put_async()
     _post.last_comment_sync_time = datetime.datetime.now()
     _post.put()
+    return True
 
 class PostHandler(BaseHandler):
         def get(self, id):
@@ -281,6 +295,13 @@ class AccessTokenHandler(BaseHandler):
 class TestHandler(BaseHandler):
 
     def get(self):
+
+        a = {'id':'egoing', 'local':'seoul'}
+        
+        if 'ida' in a:
+            logging.info(a['id'])
+        else:
+            logging.info('test')
         return
 
         graph = Graph()
