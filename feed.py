@@ -177,7 +177,19 @@ class GroupsGraphApiHandler(BaseHandler):
                 continue
 
             NewsFeedMessage += '<hr />' + (row.get('message') or '')
-            logging.info(datetime.datetime.strptime(row.get('created_time') or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000'))
+            
+            fro_m = row.get('from')
+            mem = Member.query(Member.social_id == fro_m['id']).get()
+            if(mem):
+                mem_key = mem.key
+            else:
+                mem = Member()
+                mem.type = 1
+                mem.name = fro_m['name']
+                mem.social_id = fro_m['id']
+                mem_key = mem.put();
+            if not mem_key:
+                continue
 
             feed = Feed(
                 id=row.get('id') or '',
@@ -185,7 +197,9 @@ class GroupsGraphApiHandler(BaseHandler):
                 full_picture=row.get('full_picture') or '',
                 created_time=datetime.datetime.strptime(row.get('created_time') or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000'),
                 updated_time=datetime.datetime.strptime(row.get('updated_time') or '1979-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000'),
-                link=row.get('link') or '')
+                link=row.get('link') or '',
+                member = mem_key
+             )
 
             feedKey = feed.put()
             p = re.compile(ur'#.+?(?=\s|$)')
@@ -197,14 +211,15 @@ class GroupsGraphApiHandler(BaseHandler):
                     tagKey = tagRef.key
                 else:
                     tagKey = Tag(name=tag, official=False).put()
-                trRef = TagRelation()
+                trRef = Tag.elation()
                 trRef.tag = tagKey
                 trRef.feed = feedKey
                 trRef.created_time = datetime.datetime.strptime(row['created_time'],'%Y-%m-%dT%H:%M:%S+0000')
                 trRef.put()
             max_created_time = max(max_created_time, entry_created_time)
-        logging.info(type(max_created_time))
         max_created_time = max_created_time.strftime('%Y-%m-%dT%H:%M:%S+0000')
+
+
         if config:
             config.value = max_created_time
             config.put()
@@ -213,20 +228,40 @@ class GroupsGraphApiHandler(BaseHandler):
         self.response.write(NewsFeedMessage + '<hr >')
 
 
-def syncComment(post_id):
+def syncComment(_post):
+    import datetime;
     graph = Graph()
-    post = graph.post(post_id)
-    
-    
+    post = graph.post(_post.id)
+    for com in post['comments']['data']:
+        #todo last_comment_sync_time에 따라서 동기화 할 것인지 여부를 판단한다. 
+        comObj = Comment()
+        comObj.social_id = com['id']
+        comObj.message = com['message']
+        comObj.created_time = datetime.datetime.strptime(com['created_time'] or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000')
+        comObj.parent = _post.key
+        mem = Member.query(Member.social_id == com['from']['id']).get()
+        if(mem):
+            mem_key = mem.key
+        else:
+            mem = Member()
+            mem.type = 1
+            mem.name = com['from']['name']
+            mem.social_id = com['from']['id']
+            mem_key = mem.put();
+        if not mem_key:
+            continue
+        comObj.member = mem_key
+        comObj.put_async()
+    _post.last_comment_sync_time = datetime.datetime.now()
+    _post.put()
 
 class PostHandler(BaseHandler):
         def get(self, id):
             args = {}
             post = Feed.query(Feed.id ==  id).get()
             args['post'] = post
-            logging.info(post)
             args['tags'] = self.tags()
-            syncComment(post.id)
+            syncComment(post)
             template = JINJA_ENVIRONMENT.get_template('/view/post.html')
             self.response.write(template.render(args))
 
@@ -246,14 +281,19 @@ class AccessTokenHandler(BaseHandler):
 class TestHandler(BaseHandler):
 
     def get(self):
-        tag = '#java'
-        tagRefGet = Tag.query().get()
-        tagRefPut = Tag(name=tag).put()
         return
-        tagRef = Tag.query(Tag.name == "#Java").get()
-        if not tagRef:
-            tagRef = Tag(name=tag.lower(), official=False).put()
-        TagRelation(feed=feedRef, tag=tagRef).put()
+
+        graph = Graph()
+        content = graph.groups()
+        fro_m = content['feed']['data'][0]['from']
+
+        mem = Member()
+        mem.type = 1
+        mem.name = fro_m['name']
+        mem.social_id = fro_m['id']
+        mem.put();
+
+        self.response.write("<strong>access token fail</strong>")       
 
 app = webapp2.WSGIApplication(
     [
@@ -265,6 +305,7 @@ app = webapp2.WSGIApplication(
         ("/auth/login", LoginHandler),
         ('/groups_api', GroupsGraphApiHandler),
         ('/post/(.+)', PostHandler),
-        ('/refresh_token', AccessTokenHandler, ('/t', TestHandler))],
+        ('/refresh_token', AccessTokenHandler), 
+        ('/t', TestHandler)],
         debug=True
 )

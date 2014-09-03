@@ -134,7 +134,7 @@ class Graph(object):
     def groups(self):
 
         graphApi = "https://graph.facebook.com/" + GROUP_ID + \
-            "?fields=feed.limit("+str(FEED_PAGE_SCALE)+"){message,full_picture,created_time,updated_time,id,link}&method=GET&format=json&suppress_http_code=1&access_token=" + str(
+            "?fields=feed.limit("+str(FEED_PAGE_SCALE)+"){message,full_picture,created_time,updated_time,id,link,from}&method=GET&format=json&suppress_http_code=1&access_token=" + str(
                 User.query().get().access_token)
         return self.callFacebookAPI(graphApi)
 
@@ -148,7 +148,9 @@ class Graph(object):
 
     def post(self, post_id):
         graphApi = "https://graph.facebook.com/" + post_id + \
-            "?fields=comments.limit(1000){id,message}&method=GET&format=json&suppress_http_code=1&access_token=" + str(User.query().get().access_token)
+            "?fields=comments.limit(1000){id,message,from,created_time}&method=GET&format=json&suppress_http_code=1&access_token=" + str(User.query().get().access_token)
+        
+        logging.info(graphApi)
         return self.callFacebookAPI(graphApi)
 
     

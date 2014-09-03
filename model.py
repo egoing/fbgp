@@ -16,6 +16,12 @@ class Config(ndb.Model):
     key = ndb.StringProperty(required=True)
     value = ndb.TextProperty(required=True)
 
+class Member(ndb.Model):
+    # 1. facebook
+    type = ndb.IntegerProperty(required=True)
+    name = ndb.TextProperty(required=True)
+    social_id = ndb.StringProperty(required=True)
+
 class Feed(ndb.Model):
     id = ndb.StringProperty(required=True)
     message = ndb.TextProperty(required=True)
@@ -24,12 +30,14 @@ class Feed(ndb.Model):
     updated_time = ndb.DateTimeProperty(required=True)
     link = ndb.StringProperty()
     last_comment_sync_time = ndb.DateTimeProperty()
+    member = ndb.KeyProperty(kind=Member, required=True)
 
 class Comment(ndb.Model):
-    id = ndb.StringProperty(required=True)
+    social_id = ndb.StringProperty(required=True)
     message = ndb.TextProperty(required=True)
     created_time = ndb.DateTimeProperty()
-    feed = ndb.KeyProperty(kind=Feed, required=True)
+    parent = ndb.KeyProperty(kind=Feed, required=True)
+    member = ndb.KeyProperty(kind=Member, required=True)
     
 class Tag(ndb.Model):
     name = ndb.StringProperty(required=True)
@@ -39,3 +47,4 @@ class TagRelation(ndb.Model):
     feed = ndb.KeyProperty(kind=Feed, required=True)
     tag = ndb.KeyProperty(kind=Tag, required=True)
     created_time = ndb.DateTimeProperty(required=True)
+
