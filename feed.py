@@ -99,22 +99,23 @@ class HomeHandler(BaseHandler):
 
 
 class FeedDataHandler(BaseHandler):
-    def _content_pretty(self, input):
-        return autolink(input.replace('\n', '<br />'))
+    
     def _objectfy(self, feed):
         obj = {}
-        obj['message'] = self._content_pretty(feed.message)
+        obj['message'] = feed.message
         obj['created_time'] = feed.created_time.strftime('%Y-%m-%dT%H:%M:%S+0000');
         obj['updated_time'] = feed.updated_time.strftime('%Y-%m-%dT%H:%M:%S+0000');
         obj['id'] = feed.id
         obj['full_picture'] = feed.full_picture
         return obj;
-    def post(self, tag=None, cursor=None):
+    def get(self, tag=None):
         from google.appengine.datastore.datastore_query import Cursor
         import json
         curs = Cursor(urlsafe=self.request.get('cursor'))
         feeds = []
+        logging.info(tag) 
         if tag == None or tag == 'None' : 
+            logging.info(curs)
             feedRef, next_curs, more = Feed.query().order(-Feed.created_time).fetch_page(20, start_cursor = curs)
             for feed in feedRef:
                 feeds.append(self._objectfy(feed))
@@ -211,7 +212,7 @@ class GroupsGraphApiHandler(BaseHandler):
                     tagKey = tagRef.key
                 else:
                     tagKey = Tag(name=tag, official=False).put()
-                trRef = Tag.elation()
+                trRef = TagRelation()
                 trRef.tag = tagKey
                 trRef.feed = feedKey
                 trRef.created_time = datetime.datetime.strptime(row['created_time'],'%Y-%m-%dT%H:%M:%S+0000')
@@ -300,7 +301,7 @@ app = webapp2.WSGIApplication(
         ('/', HomeHandler),
         ('/feed', HomeHandler),
         ('/feed/(.+)', HomeHandler),
-        ('/feeddata/(.+)/(.?)', FeedDataHandler),
+        ('/feeddata/(.+)', FeedDataHandler),
         ('/auth/logout', LogoutHandler),
         ("/auth/login", LoginHandler),
         ('/groups_api', GroupsGraphApiHandler),
