@@ -40,6 +40,8 @@ class ResetHandler(BaseHandler):
         ndb.delete_multi(TagRelation.query().fetch(keys_only=True))
         ndb.delete_multi(User.query().fetch(keys_only=True))
         ndb.delete_multi(Feed.query().fetch(keys_only=True))
+        ndb.delete_multi(Comment.query().fetch(keys_only=True))
+        ndb.delete_multi(Member.query().fetch(keys_only=True))
         self.response.write(json.dumps({'result':True}))
 
 config = {}
