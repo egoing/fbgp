@@ -347,7 +347,7 @@ app = webapp2.WSGIApplication(
         ("/auth/login", LoginHandler),
         ('/groups_api', GroupsGraphApiHandler),
         ('/post/(.+)', PostHandler),
-        ('/member/(.+)', MemberHandler)
+        ('/member/(.+)', MemberHandler),
         ('/refresh_token', AccessTokenHandler), 
         ('/t', TestHandler)],
         debug=True
