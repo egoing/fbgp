@@ -10,11 +10,23 @@
         {% endfor%}
         </ul>
     </div>
-    <div class="col-md-10">
-        {{post.message}}
-        <!-- bind style.js -->
-        <input type="button" id="next_btn" value="next" class="btn btn-primary btn-lg"/>
-    </div>
+    <section class="col-md-10">
+        <article>
+            <span><a href="/member/{{post.member.key_urlsafe}}">{{post.member.name}}</a></span>
+            {% autoescape false %}{{post.message}}{% endautoescape %}
+        </article>
+        <table class="table comment">
+        {% for comment in comments %}
+        <tr>
+            <td>
+            <span><a href="/member/{{comment.member.key_urlsafe}}">{{comment.member.name}}</a></span>
+            {% autoescape false %}{{comment.message}}{% endautoescape %}
+            </td>
+        </tr>
+        {% endfor%}
+    </table>
+    </section>
+    
 {% endautoescape %}
 {% endblock %}
 </div>
