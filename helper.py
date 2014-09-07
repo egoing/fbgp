@@ -28,3 +28,20 @@ def autolink(html):
                       "<a rel=\"nofollow\" href=\"" + c_url + "\" target=\"_blank\">" + c_url + "</a>",
                       html)
     return html
+
+def escape_html(string):
+    import cgi
+    return cgi.escape(string)
+
+def nl2br(string):
+    return string.replace('\n', '<br/>');
+
+def space2nbsp(string):
+    return string.replace(' ', '&nbsp;'); 
+
+def message(string):
+    import logging
+    string = escape_html(string)
+    string = nl2br(string)
+    string = space2nbsp(string)
+    return string

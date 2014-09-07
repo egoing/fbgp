@@ -20,3 +20,14 @@
     font-size:12px;
     padding-top:10px;
 }
+
+.post article {
+    padding: 7px;
+    font-size: 1.2em;
+    border-bottom: 1px solid;
+    margin-bottom: 10px;
+}
+
+.post .comment {
+    font-size:1em;
+}

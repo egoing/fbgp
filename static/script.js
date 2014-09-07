@@ -18,14 +18,9 @@ function space2br(string){
 
 function message(string){
     var t = Math.random();
-    console.group(t);
     var string  = escapeHtml(string);
-    console.log(string);
     string = nl2br(string);
-    console.log(string);
     string = space2br(string);
-    console.log(string);
-    console.groupEnd();
     return string
 }
 
@@ -51,7 +46,7 @@ $(document).ready(function(){
                         row_str +=  '<tr><td>'
                         row_str += feed['full_picture'] ? '<div class="picture"><img src="'+feed['full_picture']+'" /></div>' : '';
                         row_str += '<div class="message">'+message(feed['message'])+'</div>';
-                        row_str += '<div class="created"><a href="/post/'+feed['id']+'">'+feed['created_time']+'</a></div>';
+                        row_str += '<div class="created"><a href="/post/'+feed['source_id']+'">'+feed['created_time']+'</a></div>';
                         row_str += '</td></tr>';
                     }
                     fl.append(row_str)

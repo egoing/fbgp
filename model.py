@@ -4,6 +4,11 @@
 from google.appengine.ext import ndb
 
 # dao 모델 설정
+
+#source_type : 1. 페이스북
+#source_id : source_type에서 사용하는 id
+
+
 class User(ndb.Model):
     id = ndb.StringProperty(required=True)
     created = ndb.DateTimeProperty(auto_now_add=True)
@@ -18,12 +23,13 @@ class Config(ndb.Model):
 
 class Member(ndb.Model):
     # 1. facebook
-    type = ndb.IntegerProperty(required=True)
+    source_type = ndb.IntegerProperty(required=True)
+    source_id = ndb.StringProperty(required=True)
     name = ndb.TextProperty(required=True)
-    social_id = ndb.StringProperty(required=True)
-
+    
 class Feed(ndb.Model):
-    id = ndb.StringProperty(required=True)
+    source_id = ndb.StringProperty(required=True)
+    source_type = ndb.IntegerProperty(required=True)
     message = ndb.TextProperty(required=True)
     full_picture = ndb.StringProperty()
     created_time = ndb.DateTimeProperty(required=True)
@@ -33,7 +39,8 @@ class Feed(ndb.Model):
     member = ndb.KeyProperty(kind=Member, required=True)
 
 class Comment(ndb.Model):
-    social_id = ndb.StringProperty(required=True)
+    source_id = ndb.StringProperty(required=True)
+    source_type = ndb.IntegerProperty(required=True)
     message = ndb.TextProperty(required=True)
     created_time = ndb.DateTimeProperty()
     parent = ndb.KeyProperty(kind=Feed, required=True)
@@ -47,4 +54,3 @@ class TagRelation(ndb.Model):
     feed = ndb.KeyProperty(kind=Feed, required=True)
     tag = ndb.KeyProperty(kind=Tag, required=True)
     created_time = ndb.DateTimeProperty(required=True)
-

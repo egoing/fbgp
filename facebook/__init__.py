@@ -149,8 +149,6 @@ class Graph(object):
     def post(self, post_id):
         graphApi = "https://graph.facebook.com/" + post_id + \
             "?fields=comments.limit(1000){id,message,from,created_time}&method=GET&format=json&suppress_http_code=1&access_token=" + str(User.query().get().access_token)
-        
-        logging.info(graphApi)
         return self.callFacebookAPI(graphApi)
 
     

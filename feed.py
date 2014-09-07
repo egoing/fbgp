@@ -108,7 +108,8 @@ class FeedDataHandler(BaseHandler):
         obj['message'] = feed.message
         obj['created_time'] = feed.created_time.strftime('%Y-%m-%dT%H:%M:%S+0000');
         obj['updated_time'] = feed.updated_time.strftime('%Y-%m-%dT%H:%M:%S+0000');
-        obj['id'] = feed.id
+        obj['source_id'] = feed.source_id
+        obj['source_type'] = feed.source_type
         obj['full_picture'] = feed.full_picture
         return obj;
     def get(self, tag=None):
@@ -116,9 +117,7 @@ class FeedDataHandler(BaseHandler):
         import json
         curs = Cursor(urlsafe=self.request.get('cursor'))
         feeds = []
-        logging.info(tag) 
         if tag == None or tag == 'None' : 
-            logging.info(curs)
             feedRef, next_curs, more = Feed.query().order(-Feed.created_time).fetch_page(20, start_cursor = curs)
             for feed in feedRef:
                 feeds.append(self._objectfy(feed))
@@ -130,7 +129,7 @@ class FeedDataHandler(BaseHandler):
                 feeds.append(self._objectfy(feed))
         args = {}
         args['feeds'] = feeds;
-        args['cursor'] = next_curs.urlsafe();
+        args['cursor'] = more and next_curs and  next_curs.urlsafe();
         args['more'] = more;
         self.response.write(json.dumps(args))
         pass
@@ -182,20 +181,22 @@ class GroupsGraphApiHandler(BaseHandler):
             NewsFeedMessage += '<hr />' + (row.get('message') or '')
             
             fro_m = row.get('from')
-            mem = Member.query(Member.social_id == fro_m['id']).get()
+            mem = Member.query(Member.source_id == fro_m['id']).get()
             if(mem):
                 mem_key = mem.key
             else:
                 mem = Member()
                 mem.type = 1
                 mem.name = fro_m['name']
-                mem.social_id = fro_m['id']
+                mem.source_id = fro_m['id']
+                mem.source_type = 1
                 mem_key = mem.put();
             if not mem_key:
                 continue
 
             feed = Feed(
-                id=row.get('id') or '',
+                source_id=row.get('id') or '',
+                source_type=1,
                 message=row.get('message') or '',
                 full_picture=row.get('full_picture') or '',
                 created_time=datetime.datetime.strptime(row.get('created_time') or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000'),
@@ -234,52 +235,71 @@ class GroupsGraphApiHandler(BaseHandler):
 def syncComment(_post):
     import datetime;
     graph = Graph()
-    post = graph.post(_post.id)
-    logging.info(post)
+    post = graph.post(_post.source_id)
     if 'comments' in post:
         pass
     else:
         return True;
-
     for com in post['comments']['data']:
-        #todo last_comment_sync_time에 따라서 동기화 할 것인지 여부를 판단한다. 
+        #todo last_comment_sync_time에 따라서 동기화 할 것인지 여부를 판단한다.
+        created_time = datetime.datetime.strptime(com['created_time'] or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000')
+        if _post.last_comment_sync_time and created_time <= _post.last_comment_sync_time:
+            continue
         comObj = Comment()
-        comObj.social_id = com['id']
+        comObj.source_id = com['id']
+        comObj.source_type = 1
         comObj.message = com['message']
-        comObj.created_time = datetime.datetime.strptime(com['created_time'] or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000')
+        logging.info(comObj.message)
+        comObj.created_time = created_time
         comObj.parent = _post.key
-        mem = Member.query(Member.social_id == com['from']['id']).get()
+        mem = Member.query(Member.source_id == com['from']['id']).get()
         if(mem):
             mem_key = mem.key
         else:
             mem = Member()
-            mem.type = 1
             mem.name = com['from']['name']
-            mem.social_id = com['from']['id']
-            logging.info(com['from']['name'])
-            logging.info(com['from']['id'])
-
-
-            
+            mem.source_id = com['from']['id']
+            mem.source_type = 1
             mem_key = mem.put();    
         if not mem_key:
             continue
         comObj.member = mem_key
-        comObj.put_async()
+        comObj.put()
     _post.last_comment_sync_time = datetime.datetime.now()
     _post.put()
     return True
 
+class MemberHandler(BaseHandler):
+    def get(self, member_key):
+        pass
+
 class PostHandler(BaseHandler):
-        def get(self, id):
+        def get(self, source_id):
             args = {}
-            post = Feed.query(Feed.id ==  id).get()
-            args['post'] = post
+            post = Feed.query(Feed.source_id ==  source_id).get()
+            #args['post']['message'] = message(args['post']['message'])
             args['tags'] = self.tags()
+            # todo 포스트를 보여줄 때마다 댓글 동기화가 이루어지기 때문에 적당한 동기화 간격을 유지하기 위해서 memcached 등의 방법을 간구해야 한다. 
             syncComment(post)
+            _comments = Comment.query(Comment.parent == post.key).order(Comment.created_time).fetch()
+            comments = []
+            for comment in _comments:
+                member = comment.member.get();
+                member_key = member.key.urlsafe()
+                member = member.to_dict()
+                member['key_urlsafe'] =member_key
+                comment = comment.to_dict()
+                comment['message'] = message(comment['message'])
+                comment['member'] = member
+                comments.append(comment)
+            post_key = post.key.urlsafe()
+            args['post'] = post.to_dict();
+            args['post']['message'] = message(args['post']['message'])
+            args['post']['member'] = post.member.get().to_dict()
+            args['post']['member']['key_urlsafe']=post_key
+            args['comments'] = comments;
             template = JINJA_ENVIRONMENT.get_template('/view/post.html')
             self.response.write(template.render(args))
-
 
 class AccessTokenHandler(BaseHandler):
 
@@ -327,6 +347,7 @@ app = webapp2.WSGIApplication(
         ("/auth/login", LoginHandler),
         ('/groups_api', GroupsGraphApiHandler),
         ('/post/(.+)', PostHandler),
+        ('/member/(.+)', MemberHandler)
         ('/refresh_token', AccessTokenHandler), 
         ('/t', TestHandler)],
         debug=True
