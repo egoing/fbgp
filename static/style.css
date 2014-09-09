@@ -12,13 +12,19 @@
 
 .home td {
     padding-top:20px !important;
-    padding-bottom:20px !important;
+    padding-bottom:10px !important;
     font-size:15px;
 }
 
 .home .created {
     font-size:12px;
     padding-top:10px;
+}
+
+.home .meta{
+    padding-top:20px;
+    clear:both;
+    font-size:0.8em;
 }
 
 .post article {
@@ -30,4 +36,15 @@
 
 .post .comment {
     font-size:1em;
+}
+
+.member .entries {
+    padding:10px;
+}
+
+.member .entries li{
+    padding-top:10px;
+    padding-bottom:10px;
+    list-style: none;
+    border-bottom:1px solid #ddd;
 }

@@ -12,8 +12,20 @@ indexes:
 
 - kind: Comment
   properties:
+  - name: member
+  - name: created_time
+    direction: desc
+
+- kind: Comment
+  properties:
   - name: parent
   - name: created_time
+
+- kind: Feed
+  properties:
+  - name: member
+  - name: created_time
+    direction: desc
 
 - kind: TagRelation
   properties:

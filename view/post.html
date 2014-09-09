@@ -12,14 +12,14 @@
     </div>
     <section class="col-md-10">
         <article>
-            <span><a href="/member/{{post.member.key_urlsafe}}">{{post.member.name}}</a></span>
+            <span><a href="/member/post?member={{post.member.key_urlsafe}}">{{post.member.name}}</a></span>
             {% autoescape false %}{{post.message}}{% endautoescape %}
         </article>
         <table class="table comment">
         {% for comment in comments %}
         <tr>
             <td>
-            <span><a href="/member/{{comment.member.key_urlsafe}}">{{comment.member.name}}</a></span>
+            <span><a href="/member/comment?member={{comment.member.key_urlsafe}}">{{comment.member.name}}</a></span>
             {% autoescape false %}{{comment.message}}{% endautoescape %}
             </td>
         </tr>

@@ -46,7 +46,11 @@ $(document).ready(function(){
                         row_str +=  '<tr><td>'
                         row_str += feed['full_picture'] ? '<div class="picture"><img src="'+feed['full_picture']+'" /></div>' : '';
                         row_str += '<div class="message">'+message(feed['message'])+'</div>';
-                        row_str += '<div class="created"><a href="/post/'+feed['source_id']+'">'+feed['created_time']+'</a></div>';
+                        row_str += '<div class="meta">'
+                        row_str += '<span class="comment"><a href="#comment">댓글</a></span> |  ';
+                        row_str += '<span class="member"><a href="/member/post?member='+feed['member']['key_urlsafe']+'">'+feed['member']['name']+'</a></span> | ';
+                        row_str += '<span class="created_time"><a href="/post/'+feed['source_id']+'">'+feed['created_time']+'</a></span>';
+                        row_str += '</div>';
                         row_str += '</td></tr>';
                     }
                     fl.append(row_str)

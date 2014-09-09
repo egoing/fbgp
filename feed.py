@@ -103,15 +103,7 @@ class HomeHandler(BaseHandler):
 
 class FeedDataHandler(BaseHandler):
     
-    def _objectfy(self, feed):
-        obj = {}
-        obj['message'] = feed.message
-        obj['created_time'] = feed.created_time.strftime('%Y-%m-%dT%H:%M:%S+0000');
-        obj['updated_time'] = feed.updated_time.strftime('%Y-%m-%dT%H:%M:%S+0000');
-        obj['source_id'] = feed.source_id
-        obj['source_type'] = feed.source_type
-        obj['full_picture'] = feed.full_picture
-        return obj;
+   
     def get(self, tag=None):
         from google.appengine.datastore.datastore_query import Cursor
         import json
@@ -120,13 +112,13 @@ class FeedDataHandler(BaseHandler):
         if tag == None or tag == 'None' : 
             feedRef, next_curs, more = Feed.query().order(-Feed.created_time).fetch_page(20, start_cursor = curs)
             for feed in feedRef:
-                feeds.append(self._objectfy(feed))
+                feeds.append(feed.to_dict())
         else:
             tagRef = Tag.query(Tag.name == tag).get()
             trRef, next_curs, more = TagRelation.query(TagRelation.tag == tagRef.key).order(-TagRelation.created_time).fetch_page(20, start_cursor = curs)
             for row in trRef:
                 feed = row.feed.get();
-                feeds.append(self._objectfy(feed))
+                feeds.append(feed.to_dict())
         args = {}
         args['feeds'] = feeds;
         args['cursor'] = more and next_curs and  next_curs.urlsafe();
@@ -270,8 +262,27 @@ def syncComment(_post):
     return True
 
 class MemberHandler(BaseHandler):
-    def get(self, member_key):
-        pass
+    def get(self, type):
+        from google.appengine.datastore.datastore_query import Cursor
+        import json
+        args = {}
+        args['tags'] = self.tags()
+        curs = Cursor(urlsafe=self.request.get('cursor'))
+        member_key = self.request.get('member')
+        entries = []
+        if type == 'post':
+            entryRef, next_curs, more = Feed.query(Feed.member == ndb.Key(urlsafe = member_key)).order(-Feed.created_time).fetch_page(20, start_cursor = curs)
+        else :
+            entryRef, next_curs, more = Comment.query(Comment.member == ndb.Key(urlsafe = member_key)).order(-Comment.created_time).fetch_page(20, start_cursor = curs)
+        for entry in entryRef:
+            entries.append(entry.to_dict())
+        args['entries'] = entries;
+        args['cursor'] = more and next_curs and  next_curs.urlsafe();
+        args['more'] = more;
+        args['member_key'] = member_key;
+        args['type'] = type;
+        template = JINJA_ENVIRONMENT.get_template('/view/member.html')
+        self.response.write(template.render(args))
 
 class PostHandler(BaseHandler):
         def get(self, source_id):
@@ -284,19 +295,11 @@ class PostHandler(BaseHandler):
             _comments = Comment.query(Comment.parent == post.key).order(Comment.created_time).fetch()
             comments = []
             for comment in _comments:
-                member = comment.member.get();
-                member_key = member.key.urlsafe()
-                member = member.to_dict()
-                member['key_urlsafe'] =member_key
-                comment = comment.to_dict()
-                comment['message'] = message(comment['message'])
-                comment['member'] = member
-                comments.append(comment)
+                comments.append(comment.to_dict())
             post_key = post.key.urlsafe()
             args['post'] = post.to_dict();
             args['post']['message'] = message(args['post']['message'])
             args['post']['member'] = post.member.get().to_dict()
-            args['post']['member']['key_urlsafe']=post_key
             args['comments'] = comments;
             template = JINJA_ENVIRONMENT.get_template('/view/post.html')
             self.response.write(template.render(args))
@@ -316,7 +319,7 @@ class AccessTokenHandler(BaseHandler):
 class TestHandler(BaseHandler):
 
     def get(self):
-
+        logging.info(ndb.Key(urlsafe='ahZkZXZ-dm9jYWwtdGVybWluYWwtNjY2chMLEgZNZW1iZXIYgICAgIDSgQgM'))
         a = {'id':'egoing', 'local':'seoul'}
         
         if 'ida' in a:

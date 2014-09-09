@@ -26,6 +26,15 @@ class Member(ndb.Model):
     source_type = ndb.IntegerProperty(required=True)
     source_id = ndb.StringProperty(required=True)
     name = ndb.TextProperty(required=True)
+
+    def to_dict(self):
+        obj = {}
+        obj['source_type'] = self.source_type;
+        obj['source_id'] = self.source_id;
+        obj['name'] = self.name;
+        obj['key_urlsafe'] = self.key.urlsafe()
+        return obj;
+
     
 class Feed(ndb.Model):
     source_id = ndb.StringProperty(required=True)
@@ -37,6 +46,17 @@ class Feed(ndb.Model):
     link = ndb.StringProperty()
     last_comment_sync_time = ndb.DateTimeProperty()
     member = ndb.KeyProperty(kind=Member, required=True)
+    
+    def to_dict(self):
+        obj = {}
+        obj['message'] = self.message
+        obj['created_time'] = self.created_time.strftime('%Y-%m-%dT%H:%M:%S+0000');
+        obj['updated_time'] = self.updated_time.strftime('%Y-%m-%dT%H:%M:%S+0000');
+        obj['source_id'] = self.source_id
+        obj['source_type'] = self.source_type
+        obj['full_picture'] = self.full_picture
+        obj['member'] = self.member.get().to_dict()
+        return obj;
 
 class Comment(ndb.Model):
     source_id = ndb.StringProperty(required=True)
@@ -45,6 +65,18 @@ class Comment(ndb.Model):
     created_time = ndb.DateTimeProperty()
     parent = ndb.KeyProperty(kind=Feed, required=True)
     member = ndb.KeyProperty(kind=Member, required=True)
+
+    def to_dict(self):
+        obj = {}
+        obj['source_id'] = self.source_id
+        obj['source_type'] = self.source_type
+        obj['message'] = self.message
+        obj['created_time'] = self.created_time
+        obj['parent'] = self.parent
+        obj['member'] = self.member.get().to_dict()
+        obj['key_urlsafe'] = self.key.urlsafe()
+        return obj;
+
     
 class Tag(ndb.Model):
     name = ndb.StringProperty(required=True)
