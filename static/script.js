@@ -24,7 +24,6 @@ function message(string){
     return string
 }
 
-
 // home.html
 $(document).ready(function(){
     if($('.home').length>0) {
