@@ -20,10 +20,35 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 
 class AdminHandler(BaseHandler):
     def get(self, tag=None):
+        import json
         self.require_admin()
         args = {}
+        conf = Configuration.query().get()
+        if not conf:
+            conf = Configuration()
+        args['configuration'] = json.dumps(conf.to_dict(), indent=4, separators=(',', ': '))
         template = JINJA_ENVIRONMENT.get_template('/view/admin.html')
         self.response.write(template.render(args))
+
+
+class ConfigurationHandler(BaseHandler):
+    def post(self):
+        conf = self.request.get('configuration');
+        if conf:
+           import json
+           config = json.loads(conf);
+           logging.info(config)
+           confRef = Configuration.query().get()
+           if not confRef:
+                confRef = Configuration()
+           confRef.FACEBOOK_ID = config['FACEBOOK_ID']
+           confRef.FACEBOOK_SECRET = config['FACEBOOK_SECRET']
+           confRef.FACEBOOK_GROUP_ID = config['FACEBOOK_GROUP_ID']
+           confRef.FEED_PAGE_SCALE = config['FEED_PAGE_SCALE']
+           confRef.put()
+           self.redirect('/admin')
+        else:
+            self.response.write('Something wrong')
 
 class FBLoginHandler(BaseHandler):
     def get(self):
@@ -50,7 +75,8 @@ app = webapp2.WSGIApplication(
     [
     ('/admin', AdminHandler),
     ('/admin/reset', ResetHandler),
-    ('/admin/login', FBLoginHandler)
+    ('/admin/login', FBLoginHandler),
+    ('/admin/configuration', ConfigurationHandler)
     ],
     debug=True,
     config=config

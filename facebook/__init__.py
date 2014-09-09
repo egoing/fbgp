@@ -57,19 +57,20 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 
 
-_config = lib_config.register(
-    'main', {'FACEBOOK_ID': None, 'FACEBOOK_SECRET': None, 'FQL_ACCESS_TOKEN': None, 'GROUP_ID': None, 'FEED_PAGE_SCALE' : 10})
-
 # 페이스북 앱 정보
 
-FACEBOOK_APP_ID = _config.FACEBOOK_ID
-FACEBOOK_SECRET = _config.FACEBOOK_SECRET
-FQL_ACCESS_TOKEN = _config.FQL_ACCESS_TOKEN
-GROUP_ID = _config.GROUP_ID
-FEED_PAGE_SCALE = _config.FEED_PAGE_SCALE
 
 
 class Graph(object):
+
+    def __init__(self): 
+        config = Configuration.query().get()
+        if  config:
+            self.FACEBOOK_APP_ID = config.FACEBOOK_ID 
+            self.FACEBOOK_SECRET = config.FACEBOOK_SECRET 
+            self.FACEBOOK_GROUP_ID = config.FACEBOOK_GROUP_ID
+            self.FEED_PAGE_SCALE = config.FEED_PAGE_SCALE
+
 
     def login(self, webapp2_obj):
             
@@ -80,7 +81,7 @@ class Graph(object):
         if result:
             webapp2_obj.redirect("/")
         else:
-            args = dict(client_id=FACEBOOK_APP_ID,
+            args = dict(client_id=self.FACEBOOK_APP_ID,
                     redirect_uri=webapp2_obj.request.path_url)
             webapp2_obj.redirect(
                 "https://graph.facebook.com/oauth/authorize?" + urllib.urlencode(args))
@@ -89,11 +90,11 @@ class Graph(object):
     def refreshToken(self, webapp2_obj):    
        
         verification_code = webapp2_obj.request.get('code')
-        args = dict(client_id=FACEBOOK_APP_ID,
+        args = dict(client_id=self.FACEBOOK_APP_ID,
                     redirect_uri=webapp2_obj.request.path_url)
         if verification_code:
             try:
-                args["client_secret"] = FACEBOOK_SECRET
+                args["client_secret"] = self.FACEBOOK_SECRET
                 args["code"] = verification_code
                 response = cgi.parse_qs(urllib.urlopen(
                     "https://graph.facebook.com/oauth/access_token?" +
@@ -133,8 +134,8 @@ class Graph(object):
 
     def groups(self):
 
-        graphApi = "https://graph.facebook.com/" + GROUP_ID + \
-            "?fields=feed.limit("+str(FEED_PAGE_SCALE)+"){message,full_picture,created_time,updated_time,id,link,from}&method=GET&format=json&suppress_http_code=1&access_token=" + str(
+        graphApi = "https://graph.facebook.com/" + self.FACEBOOK_GROUP_ID + \
+            "?fields=feed.limit("+str(self.FEED_PAGE_SCALE)+"){message,full_picture,created_time,updated_time,id,link,from}&method=GET&format=json&suppress_http_code=1&access_token=" + str(
                 User.query().get().access_token)
         return self.callFacebookAPI(graphApi)
 
@@ -171,8 +172,8 @@ class GroupsFqlHandler(BaseHandler):
         self.response.write("fql groups post")
         self.response.write(user.name)
         if user:
-            query = "SELECT post_id FROM stream WHERE source_id='"+ GROUP_ID +"' LIMIT 10"
-            fql = {'q': "SELECT post_id FROM stream WHERE source_id='"+ GROUP_ID +"' LIMIT 10"}
+            query = "SELECT post_id FROM stream WHERE source_id='"+ FACEBOOK_GROUP_ID +"' LIMIT 10"
+            fql = {'q': "SELECT post_id FROM stream WHERE source_id='"+ FACEBOOK_GROUP_ID +"' LIMIT 10"}
             fql1 = {'q': "SELECT message, message_tags FROM stream WHERE source_id='1389107971348349' LIMIT 10"}
 
             args = "https://graph.facebook.com/v2.0/fql?access_token=" + FQL_ACCESS_TOKEN + "&" +urllib.urlencode(fql1) +"&format=json"

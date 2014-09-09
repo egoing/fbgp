@@ -17,6 +17,12 @@ class User(ndb.Model):
     profile_url = ndb.StringProperty(required=True)
     access_token = ndb.StringProperty(required=True)
 
+class Configuration(ndb.Model):
+    FACEBOOK_ID = ndb.StringProperty(required=True)
+    FACEBOOK_SECRET = ndb.StringProperty(required=True)
+    FACEBOOK_GROUP_ID = ndb.StringProperty(required=True)
+    FEED_PAGE_SCALE = ndb.StringProperty(required=True)
+
 class Config(ndb.Model):
     key = ndb.StringProperty(required=True)
     value = ndb.TextProperty(required=True)

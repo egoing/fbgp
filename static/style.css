@@ -27,6 +27,10 @@
     font-size:0.8em;
 }
 
+.home .message {
+    word-break:break-all;
+}
+
 .post article {
     padding: 7px;
     font-size: 1.2em;
@@ -47,4 +51,31 @@
     padding-bottom:10px;
     list-style: none;
     border-bottom:1px solid #ddd;
+}
+
+.admin section {
+    padding:20px;
+    line-height:25px;
+}
+
+.admin section label {
+    font-size:1.4em;
+    font-weight:bold;
+    color:#444
+}
+
+.admin section .description{
+    font-size:1em;
+}
+
+.admin .secure {
+    color:white;
+}
+
+.admin .secure:focus {
+    color:black;
+}
+
+.admin .after_textarea{
+    .margin-top:8px;
 }

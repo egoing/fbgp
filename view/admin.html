@@ -3,21 +3,46 @@
 {% autoescape true %}
 <div class="admin" id="content">
     <div class="row">
-        <div class="col-sm-12">
-            <table class="table">
-                <tr>
-                    <td>글수집</td><td class="btn"><a class="btn btn-danger btn-lg" href="/groups_api">Execute</a></td>
-                </tr>
-                <tr>
-                    <td>Login</td><td class="btn"><button type="button" class="btn btn-danger btn-lg" id="login_btn">Execute</button></td>
-                </tr>
-                <tr>
-                    <td>Refresh Access Token</td><td class="btn"><a class="btn btn-danger btn-lg" href="/refresh_token">Execute</a></td>
-                </tr>
-                <tr>
-                    <td>Reset All data</td><td class="btn"><button type="button" class="btn btn-danger btn-lg" id="reset_btn">Execute</button></td>
-                </tr>
-            </table>
+        <div class="col-md-2">
+            <ul class="nav nav-pills nav-stacked">
+                <li><a href="/">전체</a>
+            {% for tag in tags %}
+                <li><a href="/feed/{{tag.name}}">#{{tag.name}}</a></li>    
+            {% endfor%}
+            </ul>
+        </div>
+        <div class="col-sm-10">
+
+            <section>
+                <form action="/admin/configuration" method="post">
+                    <label for="">설정</label>
+                    <div class="description">각종 환경 설정을 지정합니다. (JSON)</div>
+                    <textarea name="configuration" class="form-control  secure" rows="7">
+    {{configuration}}
+                    </textarea>                
+                    <div class="after_textarea"><button type="submit" class="btn btn-default btn-sm" href="#">실행</button></div>
+                </form>
+            </section>
+            <section>
+                <label for="">글수집</label>
+                <div class="description">수동으로 글을 수집합니다.</div>
+                <div><a class="btn btn-default btn-sm" href="/groups_api">실행</a></div>
+            </section>
+            <section>
+                <label for="">페이스북 인증</label>
+                <div class="description">페이스북에 API 연동을 위한 관리자 인증을 합니다.</div>
+                <div><button type="button" class="btn btn-default btn-sm" id="login_btn">실행</button></div>
+            </section>
+            <section>
+                <label for="">엑세스 토큰 갱신</label>
+                <div class="description">액세스 토큰을 갱신 합니다.</div>
+                <div><a class="btn btn-default btn-sm" href="/refresh_token">실행</a></div>
+            </section>
+            <section>
+                <label for="">초기화</label>
+                <div class="description">모든 데이터를 삭제 하고 초기화 합니다.</div>
+                <div><button type="button" class="btn btn-default btn-sm" id="reset_btn">실행</button></div>
+            </section>
         </div>
     </div>
 </div>
