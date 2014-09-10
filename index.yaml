@@ -27,6 +27,11 @@ indexes:
   - name: created_time
     direction: desc
 
+- kind: TagConfig
+  properties:
+  - name: type
+  - name: order
+
 - kind: TagRelation
   properties:
   - name: tag

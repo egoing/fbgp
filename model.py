@@ -23,6 +23,11 @@ class Configuration(ndb.Model):
     FACEBOOK_GROUP_ID = ndb.StringProperty(required=True)
     FEED_PAGE_SCALE = ndb.StringProperty(required=True)
 
+class TagConfig(ndb.Model):
+    name = ndb.StringProperty(required=True)
+    order = ndb.IntegerProperty(required=True)
+    type = ndb.IntegerProperty(required=True)
+
 class Config(ndb.Model):
     key = ndb.StringProperty(required=True)
     value = ndb.TextProperty(required=True)
@@ -40,7 +45,6 @@ class Member(ndb.Model):
         obj['name'] = self.name;
         obj['key_urlsafe'] = self.key.urlsafe()
         return obj;
-
     
 class Feed(ndb.Model):
     source_id = ndb.StringProperty(required=True)
