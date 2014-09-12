@@ -42,14 +42,15 @@ $(document).ready(function(){
                     var row = [];
                     for(var i = 0 ; i < result.feeds.length ; i++){
                         var feed = result.feeds[i];
-                        row_str +=  '<tr><td>'
+                        row_str +=  '<tr><td class="entry" data-post_key="'+feed['key_urlsafe']+'">'
                         row_str += feed['full_picture'] ? '<div class="picture"><img src="'+feed['full_picture']+'" /></div>' : '';
                         row_str += '<div class="message">'+message(feed['message'])+'</div>';
                         row_str += '<div class="meta">'
-                        row_str += '<span class="comment"><a href="#comment">댓글</a></span> |  ';
+                        row_str += '<span class="comment"><a href="#comment" class="comment_btn">댓글</a></span> |  ';
                         row_str += '<span class="member"><a href="/member/post?member='+feed['member']['key_urlsafe']+'">'+feed['member']['name']+'</a></span> | ';
                         row_str += '<span class="created_time"><a href="/post/'+feed['source_id']+'">'+feed['created_time']+'</a></span>';
                         row_str += '</div>';
+                        row_str += '<div class="comment"><ul class="comment_data"></ul><button class="comment_more_btn">더보기</button></div>';
                         row_str += '</td></tr>';
                     }
                     fl.append(row_str)
@@ -63,6 +64,30 @@ $(document).ready(function(){
             load_feed($('#content').data('cursor'));
         })
         load_feed();    
+        $('body').on('click', '.comment_btn, .comment_more_btn', function(){
+            $this = $(this)
+            $entry = $this.parents('.entry');
+            $comment = $entry.find('.comment')
+            $more = $entry.find('.comment_more_btn')
+            $data = $entry.find('.comment_data')
+            $.ajax({
+                url:/commentdata/+$entry.data('post_key'),
+                dataType:'json',
+                type:'get',
+                data:{next_cursor:$comment.data('next_cursor')},
+                success:function(result){
+                    str = ''
+                    for(var i=0; i<result.entries.length; i++){
+                        str += '<li>' + result.entries[i].message
+                        str += ' <span class="name"><a href="/member/comment?member='+result.entries[i].member.key_urlsafe+'">'+result.entries[i].member.name+'</a></span>, '
+                        str += ' <span class="date">'+result.entries[i].created_time+'</span></li>'    
+                    }
+                    if(result.next_cursor && result.more) {$more.show() } else {$more.hide() }
+                    $comment.data('next_cursor', result.next_cursor)
+                    $data.append(str)
+                }
+            })
+        })
     } else if($('.admin').length>0){
         $('#login_btn').click(function(){
             location.href = '/admin/login'

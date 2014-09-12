@@ -4,11 +4,11 @@
 {% autoescape true %}
 <div class="row">
     <div class="col-md-2">
-        <ul class="nav nav-pills nav-stacked">
+        <ul class="nav nav-pills nav-stacked  hidden-xs">
             <li><a href="/admin">관리자</a></li>
             <li><a href="/">전체</a>
         {% for tag in tags %}
-            <li><a href="/feed/{{tag.name}}">#{{tag.name}}</a></li>    
+            <li><a href="/feed/{{tag.name}}">{{tag.name}}</a></li>    
         {% endfor%}
         </ul>
     </div>

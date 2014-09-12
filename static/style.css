@@ -1,3 +1,9 @@
+@media (min-width: @screen-sm-min) {
+    #list{
+        display:none;
+    }
+}
+
 .logo{
     width:45px;
 }
@@ -29,6 +35,21 @@
 
 .home .message {
     word-break:break-all;
+}
+
+.home .comment_more_btn {
+    display:none;
+}
+
+.home .comment_data {
+    padding:0;
+    list-style:none;
+}
+
+
+.home .comment_data li {
+    padding-top:5px;
+    font-size:0.9em
 }
 
 .post article {

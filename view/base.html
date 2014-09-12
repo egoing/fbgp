@@ -32,7 +32,11 @@
         </div>
         <!-- Collect the nav links, forms, and other content for toggling -->
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-          <ul class="nav navbar-nav">
+          <ul class="nav navbar-nav  visible-xs-block">
+            {% for tag in tags %}
+            <li><a href="/feed/{{tag.name}}">#{{tag.name}}</a></li>
+            {% endfor %}
+            </li>
           </ul>
           <!--
           <form class="navbar-form navbar-left" role="search">

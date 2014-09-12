@@ -35,7 +35,7 @@ class AdminHandler(BaseHandler):
         tagcs = [tag.to_dict() for tag in tagcRef]
         args['tagConfig'] = json.dumps(tagcs,indent=4, separators=(',', ': '), ensure_ascii=False).encode('utf8')
         args['configuration'] = json.dumps(conf.to_dict(), indent=4, separators=(',', ': '),ensure_ascii=False).encode('utf8')
-        args['tags'] = self.tags()
+        args['tags'] = self.tags();
         template = JINJA_ENVIRONMENT.get_template('/view/admin.html')
         self.response.write(template.render(args))
 

@@ -59,7 +59,9 @@ class BaseHandler(webapp2.RequestHandler):
             return False
 
     def tags(self):
-        return Tag.query().fetch()
+        return TagConfig.query().order(TagConfig.type, TagConfig.order).fetch()
+
+        
 
         
 

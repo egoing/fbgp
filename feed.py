@@ -59,7 +59,7 @@ from google.appengine.ext.webapp import util
 from google.appengine.ext.webapp import template
 from model import *
 from cookie import *
-
+from google.appengine.api import memcache
 
 import time
 import re
@@ -80,21 +80,7 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 
 class HomeHandler(BaseHandler):
     def get(self, tag=None):
-        if self.current_user:
-            args = dict(current_user=self.current_user)
-        else:
-            args = {}
-        if tag:
-            tagRef = Tag.query(Tag.name == tag).get()
-            if not tagRef:
-                template = JINJA_ENVIRONMENT.get_template('/view/nodata.html')
-                return
-            trRef = TagRelation.query(TagRelation.tag == tagRef.key).fetch()
-            args['feeds'] = []
-            for x in trRef:
-                args['feeds'].append(x.feed.get())
-        else:
-            args['feeds'] = Feed.query().fetch()
+        args = {}
         args['tags'] = self.tags()
         args['tag'] = tag
         template = JINJA_ENVIRONMENT.get_template('/view/home.html')
@@ -102,23 +88,31 @@ class HomeHandler(BaseHandler):
 
 
 class FeedDataHandler(BaseHandler):
-    
-   
     def get(self, tag=None):
         from google.appengine.datastore.datastore_query import Cursor
         import json
         curs = Cursor(urlsafe=self.request.get('cursor'))
         feeds = []
-        if tag == None or tag == 'None' : 
-            feedRef, next_curs, more = Feed.query().order(-Feed.created_time).fetch_page(20, start_cursor = curs)
-            for feed in feedRef:
-                feeds.append(feed.to_dict())
+        more = False
+        next_curs = None
+        ckey = 'FeedDataHandler.%s.%s' % (tag, self.request.get('cursor'))
+        cdata = memcache.get(ckey)
+        if cdata is not None:
+            feeds, next_curs, more = cdata
         else:
-            tagRef = Tag.query(Tag.name == tag).get()
-            trRef, next_curs, more = TagRelation.query(TagRelation.tag == tagRef.key).order(-TagRelation.created_time).fetch_page(20, start_cursor = curs)
-            for row in trRef:
-                feed = row.feed.get();
-                feeds.append(feed.to_dict())
+            if tag == None or tag == 'None' : 
+                feedRef, next_curs, more = Feed.query().order(-Feed.created_time).fetch_page(20, start_cursor = curs)
+                for feed in feedRef:
+                    feeds.append(feed.to_dict())
+            else:
+                tagRef = Tag.query(Tag.name == tag).get()
+                if tagRef:
+                    trRef, next_curs, more = TagRelation.query(TagRelation.tag == tagRef.key).order(-TagRelation.created_time).fetch_page(20, start_cursor = curs)
+                    for row in trRef:
+                        feed = row.feed.get();
+                        feeds.append(feed.to_dict())
+            if not memcache.add(ckey, (feeds, next_curs, more), 60*1):
+                logging.error('Memcache set failed.')
         args = {}
         args['feeds'] = feeds;
         args['cursor'] = more and next_curs and  next_curs.urlsafe();
@@ -288,21 +282,42 @@ class PostHandler(BaseHandler):
         def get(self, source_id):
             args = {}
             post = Feed.query(Feed.source_id ==  source_id).get()
-            #args['post']['message'] = message(args['post']['message'])
-            args['tags'] = self.tags()
-            # todo 포스트를 보여줄 때마다 댓글 동기화가 이루어지기 때문에 적당한 동기화 간격을 유지하기 위해서 memcached 등의 방법을 간구해야 한다. 
-            syncComment(post)
-            _comments = Comment.query(Comment.parent == post.key).order(Comment.created_time).fetch()
-            comments = []
-            for comment in _comments:
-                comments.append(comment.to_dict())
-            post_key = post.key.urlsafe()
-            args['post'] = post.to_dict();
-            args['post']['message'] = message(args['post']['message'])
-            args['post']['member'] = post.member.get().to_dict()
-            args['comments'] = comments;
+            ckey = 'PostHandler.%s' % source_id
+            cdata = memcache.get(ckey)
+            if cdata is not None:
+                args = cdata
+            else:
+                args['tags'] = self.tags()
+                syncComment(post)
+                _comments = Comment.query(Comment.parent == post.key).order(Comment.created_time).fetch()
+                comments = []
+                for comment in _comments:
+                    comments.append(comment.to_dict())
+                post_key = post.key.urlsafe()
+                args['post'] = post.to_dict();
+                args['post']['message'] = message(args['post']['message'])
+                args['post']['member'] = post.member.get().to_dict()
+                args['comments'] = comments;
+                if not memcache.add(ckey, args, 60 * 10):
+                    logging.error('Memcache set failed.')
             template = JINJA_ENVIRONMENT.get_template('/view/post.html')
             self.response.write(template.render(args))
+
+
+class CommentDataHandler(BaseHandler):
+    def get(self, post_key):
+        from google.appengine.datastore.datastore_query import Cursor
+        import json
+        next_curs = Cursor(urlsafe=self.request.get('next_cursor'))
+        logging.info(next_curs)
+        entryRef, next_cursor, more = Comment.query(Comment.parent == ndb.Key(urlsafe = post_key)).order(Comment.created_time).fetch_page(4, start_cursor = next_curs)
+        template = JINJA_ENVIRONMENT.get_template('/view/post.html')
+        entries = []
+        for _entry in entryRef:
+            entry = _entry.to_dict()
+            entry['member'] = _entry.member.get().to_dict()
+            entries.append(entry)
+        self.response.write(json.dumps({'entries':entries, 'next_cursor':next_cursor.urlsafe() if next_cursor else None, 'more':more}))
 
 class AccessTokenHandler(BaseHandler):
 
@@ -352,6 +367,7 @@ app = webapp2.WSGIApplication(
         ('/post/(.+)', PostHandler),
         ('/member/(.+)', MemberHandler),
         ('/refresh_token', AccessTokenHandler), 
+        ('/commentdata/(.+)', CommentDataHandler),
         ('/t', TestHandler)],
         debug=True
 )

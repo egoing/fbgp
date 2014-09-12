@@ -66,6 +66,7 @@ class Feed(ndb.Model):
         obj['source_type'] = self.source_type
         obj['full_picture'] = self.full_picture
         obj['member'] = self.member.get().to_dict()
+        obj['key_urlsafe'] = self.key.urlsafe()
         return obj;
 
 class Comment(ndb.Model):
@@ -81,9 +82,9 @@ class Comment(ndb.Model):
         obj['source_id'] = self.source_id
         obj['source_type'] = self.source_type
         obj['message'] = self.message
-        obj['created_time'] = self.created_time
-        obj['parent'] = self.parent
-        obj['member'] = self.member.get().to_dict()
+        obj['created_time'] = self.created_time.strftime('%Y-%m-%dT%H:%M:%S+0000');
+        obj['parent'] = self.parent.urlsafe()
+        obj['member'] = self.member.urlsafe()
         obj['key_urlsafe'] = self.key.urlsafe()
         return obj;
 
