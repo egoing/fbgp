@@ -2,29 +2,33 @@
 {% extends "/view/base.html" %}
 {% block content %}
 {% autoescape true %}
-<div class="col-md-2">
-        <ul class="nav nav-pills nav-stacked">
+<div class="row">
+    <div class="col-md-2">
+        <ul class="nav nav-pills nav-stacked  hidden-xs">
+            <li><a href="/admin">관리자</a></li>
             <li><a href="/">전체</a>
         {% for tag in tags %}
-            <li><a href="/feed/{{tag.name}}">#{{tag.name}}</a></li>    
+            <li><a href="/feed/{{tag.name}}">{{tag.name}}</a></li>    
         {% endfor%}
         </ul>
     </div>
-    <section class="col-md-10">
+    <div class="col-md-10 article">
         <article>
             <span><a href="/member/post?member={{post.member.key_urlsafe}}">{{post.member.name}}</a></span>
             {% autoescape false %}{{post.message}}{% endautoescape %}
         </article>
-        <table class="table comment">
-        {% for comment in comments %}
-        <tr>
-            <td>
-            <span><a href="/member/comment?member={{comment.member.key_urlsafe}}">{{comment.member.name}}</a></span>
-            {% autoescape false %}{{comment.message}}{% endautoescape %}
-            </td>
-        </tr>
-        {% endfor%}
-    </table>
+        <ul class="comment">
+            {% for comment in comments.entries %}
+            <li>
+                {% autoescape false %}{{comment.message}}{% endautoescape %}
+                <span class="name"><a href="/member/comment?member={{comment.member.key_urlsafe}}">{{comment.member.name}}</a></span>
+                <span class="date">{{comment.created_time}}</span>
+            </li>
+            {% endfor%}
+        </ul>
+    {% if comments.more %}
+    <a href="/post/{{post.source_id}}?next_cursor={{comments.next_cursor}}">더보기</a>
+    {% endif %}
     </section>
     
 {% endautoescape %}

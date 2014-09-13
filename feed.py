@@ -279,45 +279,62 @@ class MemberHandler(BaseHandler):
         self.response.write(template.render(args))
 
 class PostHandler(BaseHandler):
-        def get(self, source_id):
+        def get(self, post_key):
+            from google.appengine.datastore.datastore_query import Cursor
             args = {}
-            post = Feed.query(Feed.source_id ==  source_id).get()
-            ckey = 'PostHandler.%s' % source_id
+            next_cursor = self.request.get('next_cursor');
+            ckey = 'PostHandler.%s.%s' % (post_key,next_cursor)
             cdata = memcache.get(ckey)
             if cdata is not None:
                 args = cdata
             else:
                 args['tags'] = self.tags()
+                post = Feed.query(Feed.key ==  ndb.Key(urlsafe = post_key)).get()
                 syncComment(post)
-                _comments = Comment.query(Comment.parent == post.key).order(Comment.created_time).fetch()
-                comments = []
-                for comment in _comments:
-                    comments.append(comment.to_dict())
+                next_cursor = Cursor(urlsafe=next_cursor)
+                logging.info(next_cursor)
+                entryRef, next_cursor, more = Comment.query(Comment.parent == post.key).order(Comment.created_time).fetch_page(100, start_cursor = next_cursor)
+                entries = []
+                for _entry in entryRef:
+                    entry = _entry.to_dict()
+                    entry['member'] = _entry.member.get().to_dict()
+                    entries.append(entry)
                 post_key = post.key.urlsafe()
                 args['post'] = post.to_dict();
                 args['post']['message'] = message(args['post']['message'])
                 args['post']['member'] = post.member.get().to_dict()
-                args['comments'] = comments;
+                args['comments'] = {}
+                args['comments']['entries'] = entries;
+                logging.info(entries)
+                args['comments']['next_cursor'] = next_cursor.urlsafe() if next_cursor else None
+                args['comments']['more'] = more
                 if not memcache.add(ckey, args, 60 * 10):
                     logging.error('Memcache set failed.')
             template = JINJA_ENVIRONMENT.get_template('/view/post.html')
             self.response.write(template.render(args))
 
-
 class CommentDataHandler(BaseHandler):
     def get(self, post_key):
         from google.appengine.datastore.datastore_query import Cursor
         import json
-        next_curs = Cursor(urlsafe=self.request.get('next_cursor'))
-        logging.info(next_curs)
-        entryRef, next_cursor, more = Comment.query(Comment.parent == ndb.Key(urlsafe = post_key)).order(Comment.created_time).fetch_page(4, start_cursor = next_curs)
-        template = JINJA_ENVIRONMENT.get_template('/view/post.html')
+        next_cursor = Cursor(urlsafe=self.request.get('next_cursor'))
         entries = []
-        for _entry in entryRef:
-            entry = _entry.to_dict()
-            entry['member'] = _entry.member.get().to_dict()
-            entries.append(entry)
-        self.response.write(json.dumps({'entries':entries, 'next_cursor':next_cursor.urlsafe() if next_cursor else None, 'more':more}))
+        ckey = 'CommentDataHandler.%s.%s' % (post_key,self.request.get('next_cursor'))
+        cdata = memcache.get(ckey)
+        if cdata is not None:
+            cache = cdata
+        else:
+            post = Feed.query(Feed.key ==  ndb.Key(urlsafe = post_key)).get()
+            syncComment(post);
+            entryRef, next_cursor, more = Comment.query(Comment.parent == ndb.Key(urlsafe = post_key)).order(Comment.created_time).fetch_page(4, start_cursor = next_cursor)
+            for _entry in entryRef:
+                entry = _entry.to_dict()
+                entry['member'] = _entry.member.get().to_dict()
+                entries.append(entry)
+            cache = {'entries':entries, 'next_cursor':next_cursor.urlsafe() if next_cursor else None, 'more':more};
+            if not memcache.add(ckey, cache, 60 * 60):
+                logging.error('Memcache set failed.')
+        self.response.write(json.dumps(cache))
 
 class AccessTokenHandler(BaseHandler):
 

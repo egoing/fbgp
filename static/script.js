@@ -38,19 +38,20 @@ $(document).ready(function(){
                 type:'get',
                 data:{'cursor':(cursor ? cursor : '' )},
                 success:function(result){
+                    $('#next_btn').show().blur();
                     var row_str = '';
                     var row = [];
                     for(var i = 0 ; i < result.feeds.length ; i++){
                         var feed = result.feeds[i];
                         row_str +=  '<tr><td class="entry" data-post_key="'+feed['key_urlsafe']+'">'
                         row_str += feed['full_picture'] ? '<div class="picture"><img src="'+feed['full_picture']+'" /></div>' : '';
-                        row_str += '<div class="message">'+message(feed['message'])+'</div>';
+                        row_str += '<div class="message">'+message(feed['message']);
                         row_str += '<div class="meta">'
-                        row_str += '<span class="comment"><a href="#comment" class="comment_btn">댓글</a></span> |  ';
-                        row_str += '<span class="member"><a href="/member/post?member='+feed['member']['key_urlsafe']+'">'+feed['member']['name']+'</a></span> | ';
-                        row_str += '<span class="created_time"><a href="/post/'+feed['source_id']+'">'+feed['created_time']+'</a></span>';
-                        row_str += '</div>';
-                        row_str += '<div class="comment"><ul class="comment_data"></ul><button class="comment_more_btn">더보기</button></div>';
+                        row_str += '<span><a href="" class="comment_btn">댓글</a></span> |  ';
+                        row_str += '<span><a href="/member/post?member='+feed['member']['key_urlsafe']+'">'+feed['member']['name']+'</a></span> | ';
+                        row_str += '<span><a href="/post/'+feed['key_urlsafe']+'">'+feed['created_time']+'</a></span>';
+                        row_str += '</div></div>';
+                        row_str += '<div class="comment"><ul class="comment_data"></ul><button class="comment_more_btn btn btn-default btn-xs">더보기</button></div>';
                         row_str += '</td></tr>';
                     }
                     fl.append(row_str)
@@ -70,23 +71,31 @@ $(document).ready(function(){
             $comment = $entry.find('.comment')
             $more = $entry.find('.comment_more_btn')
             $data = $entry.find('.comment_data')
+            $this.blur()
             $.ajax({
                 url:/commentdata/+$entry.data('post_key'),
                 dataType:'json',
                 type:'get',
                 data:{next_cursor:$comment.data('next_cursor')},
                 success:function(result){
+                    if(Math.max($data.find('li').length, result.entries.length)>0){
+                        $comment.show();
+                    }
                     str = ''
                     for(var i=0; i<result.entries.length; i++){
-                        str += '<li>' + result.entries[i].message
-                        str += ' <span class="name"><a href="/member/comment?member='+result.entries[i].member.key_urlsafe+'">'+result.entries[i].member.name+'</a></span>, '
-                        str += ' <span class="date">'+result.entries[i].created_time+'</span></li>'    
+                        str += '<li>'
+                        str += result.entries[i].message
+                        str += '<div class="meta">'
+                        str += '<span class="name"><a href="/member/comment?member='+result.entries[i].member.key_urlsafe+'">'+result.entries[i].member.name+'</a></span> | '
+                        str += '<span class="date">'+result.entries[i].created_time+'</span></li>'    
+                        str += '</div>'
                     }
                     if(result.next_cursor && result.more) {$more.show() } else {$more.hide() }
                     $comment.data('next_cursor', result.next_cursor)
                     $data.append(str)
                 }
             })
+            return false;  
         })
     } else if($('.admin').length>0){
         $('#login_btn').click(function(){

@@ -24,7 +24,7 @@ FACEBOOK_APP_ID = _config.FACEBOOK_ID
 FACEBOOK_SECRET = _config.FACEBOOK_SECRET
 FQL_ACCESS_TOKEN = _config.FQL_ACCESS_TOKEN
 GROUP_ID = _config.GROUP_ID
-
+CACHE_COMMENT_IN_POST_TIME = 60*30
 
 
 class BaseHandler(webapp2.RequestHandler):
@@ -60,8 +60,6 @@ class BaseHandler(webapp2.RequestHandler):
 
     def tags(self):
         return TagConfig.query().order(TagConfig.type, TagConfig.order).fetch()
-
-        
 
         
 

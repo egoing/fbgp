@@ -8,6 +8,7 @@ from google.appengine.ext import ndb
 #source_type : 1. 페이스북
 #source_id : source_type에서 사용하는 id
 
+DATE_FORMAT = '%y-%m-%d %H:%M'
 
 class User(ndb.Model):
     id = ndb.StringProperty(required=True)
@@ -60,8 +61,8 @@ class Feed(ndb.Model):
     def to_dict(self):
         obj = {}
         obj['message'] = self.message
-        obj['created_time'] = self.created_time.strftime('%Y-%m-%dT%H:%M:%S+0000');
-        obj['updated_time'] = self.updated_time.strftime('%Y-%m-%dT%H:%M:%S+0000');
+        obj['created_time'] = self.created_time.strftime(DATE_FORMAT);
+        obj['updated_time'] = self.updated_time.strftime(DATE_FORMAT);
         obj['source_id'] = self.source_id
         obj['source_type'] = self.source_type
         obj['full_picture'] = self.full_picture
@@ -82,7 +83,7 @@ class Comment(ndb.Model):
         obj['source_id'] = self.source_id
         obj['source_type'] = self.source_type
         obj['message'] = self.message
-        obj['created_time'] = self.created_time.strftime('%Y-%m-%dT%H:%M:%S+0000');
+        obj['created_time'] = self.created_time.strftime(DATE_FORMAT);
         obj['parent'] = self.parent.urlsafe()
         obj['member'] = self.member.urlsafe()
         obj['key_urlsafe'] = self.key.urlsafe()
