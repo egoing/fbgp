@@ -44,8 +44,8 @@ $(document).ready(function(){
                     for(var i = 0 ; i < result.feeds.length ; i++){
                         var feed = result.feeds[i];
                         row_str +=  '<tr><td class="entry" data-post_key="'+feed['key_urlsafe']+'">'
-                        row_str += feed['full_picture'] ? '<div class="picture"><img src="'+feed['full_picture']+'" /></div>' : '';
                         row_str += '<div class="message">'+message(feed['message']);
+                        row_str += feed['full_picture'] ? '<div class="picture"><img src="'+feed['full_picture']+'" /></div>' : '';
                         row_str += '<ul class="meta">'
                         row_str += '<li><a href="/member/post?member='+feed['member']['key_urlsafe']+'">'+feed['member']['name']+'</a></li>';
                         row_str += '<li><a href="/post/'+feed['key_urlsafe']+'">'+feed['created_time']+'</a></li>';

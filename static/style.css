@@ -31,7 +31,8 @@
     list-style:none;
     padding:0;
     width:100%;
-    margin-top:15px
+    margin-top:15px;
+    clear:both;
 }
 .home .message .meta li{
     float:left;
