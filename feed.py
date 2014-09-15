@@ -101,17 +101,17 @@ class FeedDataHandler(BaseHandler):
             feeds, next_curs, more = cdata
         else:
             if tag == None or tag == 'None' : 
-                feedRef, next_curs, more = Feed.query().order(-Feed.created_time).fetch_page(20, start_cursor = curs)
+                feedRef, next_curs, more = Feed.query().order(-Feed.created_time).fetch_page(FEED_PAGE_SCALE, start_cursor = curs)
                 for feed in feedRef:
                     feeds.append(feed.to_dict())
             else:
                 tagRef = Tag.query(Tag.name == tag).get()
                 if tagRef:
-                    trRef, next_curs, more = TagRelation.query(TagRelation.tag == tagRef.key).order(-TagRelation.created_time).fetch_page(20, start_cursor = curs)
+                    trRef, next_curs, more = TagRelation.query(TagRelation.tag == tagRef.key).order(-TagRelation.created_time).fetch_page(FEED_PAGE_SCALE, start_cursor = curs)
                     for row in trRef:
                         feed = row.feed.get();
                         feeds.append(feed.to_dict())
-            if not memcache.add(ckey, (feeds, next_curs, more), 60*1):
+            if not memcache.add(ckey, (feeds, next_curs, more), CACHE_POST_IN_HOME*1):
                 logging.error('Memcache set failed.')
         args = {}
         args['feeds'] = feeds;
@@ -308,7 +308,7 @@ class PostHandler(BaseHandler):
                 logging.info(entries)
                 args['comments']['next_cursor'] = next_cursor.urlsafe() if next_cursor else None
                 args['comments']['more'] = more
-                if not memcache.add(ckey, args, 60 * 10):
+                if not memcache.add(ckey, args, CACEH_POST_IN_PERMLINK):
                     logging.error('Memcache set failed.')
             template = JINJA_ENVIRONMENT.get_template('/view/post.html')
             self.response.write(template.render(args))
@@ -326,13 +326,13 @@ class CommentDataHandler(BaseHandler):
         else:
             post = Feed.query(Feed.key ==  ndb.Key(urlsafe = post_key)).get()
             syncComment(post);
-            entryRef, next_cursor, more = Comment.query(Comment.parent == ndb.Key(urlsafe = post_key)).order(Comment.created_time).fetch_page(4, start_cursor = next_cursor)
+            entryRef, next_cursor, more = Comment.query(Comment.parent == ndb.Key(urlsafe = post_key)).order(Comment.created_time).fetch_page(COMMEMT_PAGE_SCALE, start_cursor = next_cursor)
             for _entry in entryRef:
                 entry = _entry.to_dict()
                 entry['member'] = _entry.member.get().to_dict()
                 entries.append(entry)
             cache = {'entries':entries, 'next_cursor':next_cursor.urlsafe() if next_cursor else None, 'more':more};
-            if not memcache.add(ckey, cache, 60 * 60):
+            if not memcache.add(ckey, cache, CACHE_COMMENT_IN_POST_TIME):
                 logging.error('Memcache set failed.')
         self.response.write(json.dumps(cache))
 

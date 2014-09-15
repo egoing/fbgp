@@ -27,20 +27,33 @@
 }
 
 .home .message .meta{
-    padding-top:20px;
-    clear:both;
-    font-size:0.8em;
-    padding-bottom:5px;
+    font-size:0.9em;
+    list-style:none;
+    padding:0;
+    width:100%;
+    margin-top:15px
+}
+.home .message .meta li{
+    float:left;
+    padding:10 10 1 1;
+}
+
+.home .message .meta li a:hover{
+    text-decoration:none;
+}
+
+.home .message .meta li:last-child{
+   float:right;
 }
 
 .home .comment{
     margin-bottom:5px;
     border-top:1px solid black;
     display:none;
+    clear:both;
 }
 
 .home .comment .meta{
-    font-size:0.8em;
     padding-top:5px;
 }
 

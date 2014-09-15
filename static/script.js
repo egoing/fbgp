@@ -46,12 +46,12 @@ $(document).ready(function(){
                         row_str +=  '<tr><td class="entry" data-post_key="'+feed['key_urlsafe']+'">'
                         row_str += feed['full_picture'] ? '<div class="picture"><img src="'+feed['full_picture']+'" /></div>' : '';
                         row_str += '<div class="message">'+message(feed['message']);
-                        row_str += '<div class="meta">'
-                        row_str += '<span><a href="" class="comment_btn">댓글</a></span> |  ';
-                        row_str += '<span><a href="/member/post?member='+feed['member']['key_urlsafe']+'">'+feed['member']['name']+'</a></span> | ';
-                        row_str += '<span><a href="/post/'+feed['key_urlsafe']+'">'+feed['created_time']+'</a></span>';
-                        row_str += '</div></div>';
-                        row_str += '<div class="comment"><ul class="comment_data"></ul><button class="comment_more_btn btn btn-default btn-xs">더보기</button></div>';
+                        row_str += '<ul class="meta">'
+                        row_str += '<li><a href="/member/post?member='+feed['member']['key_urlsafe']+'">'+feed['member']['name']+'</a></li>';
+                        row_str += '<li><a href="/post/'+feed['key_urlsafe']+'">'+feed['created_time']+'</a></li>';
+                        row_str += '<li><a href="" class="comment_btn">댓글보기</a></li>';
+                        row_str += '</ul></div>';
+                        row_str += '<div class="comment"><ul class="comment_data"></ul><button class="comment_more_btn btn btn-default btn-sm">더보기</button></div>';
                         row_str += '</td></tr>';
                     }
                     fl.append(row_str)

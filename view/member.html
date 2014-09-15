@@ -2,15 +2,17 @@
 {% extends "/view/base.html" %}
 {% block content %}
 {% autoescape true %}
-<div class="col-md-2">
-        <ul class="nav nav-pills nav-stacked">
+<div class="row">
+    <div class="col-md-2">
+        <ul class="nav nav-pills nav-stacked  hidden-xs">
+            <li><a href="/admin">관리자</a></li>
             <li><a href="/">전체</a>
         {% for tag in tags %}
-            <li><a href="/feed/{{tag.name}}">#{{tag.name}}</a></li>    
+            <li><a href="/feed/{{tag.name}}">{{tag.name}}</a></li>    
         {% endfor%}
         </ul>
     </div>
-    <section class="col-md-10">
+    <div class="col-md-10 article">
         <ul class="nav nav-tabs" role="tablist">
             <li {% if type == 'post' %}class="active"{% endif %}><a href="/member/post?member={{member_key}}">게시글</a></li>
             <li {% if type == 'comment' %}class="active"{% endif %}><a href="/member/comment?member={{member_key}}">댓글</a></li>
