@@ -24,6 +24,7 @@ function message(string){
     return string
 }
 
+
 // home.html
 $(document).ready(function(){
     if($('.home').length>0) {
@@ -43,20 +44,22 @@ $(document).ready(function(){
                     var row = [];
                     for(var i = 0 ; i < result.feeds.length ; i++){
                         var feed = result.feeds[i];
-                        row_str +=  '<tr><td class="entry" data-post_key="'+feed['key_urlsafe']+'">'
-                        row_str += '<div class="message">'+message(feed['message']);
+                        row_str +=  '<li class="entry" data-post_key="'+feed['key_urlsafe']+'">'
+                        row_str += '<div class="message">';
                         row_str += feed['full_picture'] ? '<div class="picture"><img src="'+feed['full_picture']+'" /></div>' : '';
+                        row_str += message(feed['message']);
                         row_str += '<ul class="meta">'
                         row_str += '<li><a href="/member/post?member='+feed['member']['key_urlsafe']+'">'+feed['member']['name']+'</a></li>';
                         row_str += '<li><a href="/post/'+feed['key_urlsafe']+'">'+feed['created_time']+'</a></li>';
                         row_str += '<li><a href="" class="comment_btn">댓글보기</a></li>';
                         row_str += '</ul></div>';
                         row_str += '<div class="comment"><ul class="comment_data"></ul><button class="comment_more_btn btn btn-default btn-sm">더보기</button></div>';
-                        row_str += '</td></tr>';
+                        row_str += '</li>';
                     }
-                    fl.append(row_str)
+                    fl.append($(row_str))
                     if(!result.more)
                         $('#next_btn').prop('disabled', true);
+                    fl.autolink();
                     content.data('cursor', result.cursor);
                 }
             })
@@ -93,6 +96,7 @@ $(document).ready(function(){
                     if(result.next_cursor && result.more) {$more.show() } else {$more.hide() }
                     $comment.data('next_cursor', result.next_cursor)
                     $data.append(str)
+                    $data.autolink();
                 }
             })
             return false;  
@@ -110,3 +114,13 @@ $(document).ready(function(){
         })
     }
 })
+
+
+jQuery.fn.autolink = function (target) {
+    if (target == null) target = '_parent';
+    return this.each( function(){
+        var re = /((http|https|ftp):\/\/[\w?=&.\/-;#~%-]+(?![\w\s?&.\/;#~%"=-]*>))/g;
+        $(this).html( $(this).html().replace(re, '<a href="$1" target="'+ target +'">$1</a> ') );
+    });
+}
+
