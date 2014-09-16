@@ -6,4 +6,10 @@ threadsafe: true
 
 handlers:
 - url: /.*
-  script: helloworld.application
+  script: guestbook.application
+
+libraries:
+- name: webapp2
+  version: latest
+
+
