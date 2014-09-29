@@ -217,7 +217,15 @@ class GroupsGraphApiHandler(BaseHandler):
             Config(key='last_synced_time', value=max_created_time).put()
         self.response.write(NewsFeedMessage + '<hr >')
 
-
+class syncFeedHandler(BaseHandler):
+    def get(self):
+        from datetime import datetime, timedelta, date
+        import time
+        entries, next_curs, more = Feed.query(Feed.created_time < (datetime.today() - timedelta(days=1))).order(-Feed.created_time).fetch_page(SYNC_FEED_YESTERDAY_PAGE);
+        for entry in entries:
+            syncComment(entry)
+            time.sleep(1)
+        
 def syncComment(_post):
     import datetime;
     graph = Graph()
@@ -385,6 +393,7 @@ app = webapp2.WSGIApplication(
         ('/member/(.+)', MemberHandler),
         ('/refresh_token', AccessTokenHandler), 
         ('/commentdata/(.+)', CommentDataHandler),
+        ('/sync_feed', syncFeedHandler),
         ('/t', TestHandler)],
         debug=True
 )

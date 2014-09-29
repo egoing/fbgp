@@ -31,6 +31,7 @@ CACEH_POST_IN_PERMLINK = 60*60;
 
 FEED_PAGE_SCALE = 50;
 COMMEMT_PAGE_SCALE = 50;
+SYNC_FEED_YESTERDAY_PAGE = 5;
 
 class BaseHandler(webapp2.RequestHandler):
 
