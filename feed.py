@@ -158,70 +158,92 @@ class GroupsGraphApiHandler(BaseHandler):
         else:
             last_synced_time = datetime.datetime.strptime('1979','%Y')
 
-        max_created_time = last_synced_time
         for row in content["feed"]["data"]:
-            entry_created_time = datetime.datetime.strptime(row.get('created_time') or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000')
-            if last_synced_time >= entry_created_time:
+            entry_updated_time = datetime.datetime.strptime(row.get('updated_time') or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000')
+            if last_synced_time >= entry_updated_time:
                 continue
 
             NewsFeedMessage += '<hr />' + (row.get('message') or '')
             
-            fro_m = row.get('from')
-            mem = Member.query(Member.source_id == fro_m['id']).get()
-            if(mem):
-                mem_key = mem.key
-            else:
-                mem = Member()
-                mem.type = 1
-                mem.name = fro_m['name']
-                mem.source_id = fro_m['id']
-                mem.source_type = 1
-                mem_key = mem.put();
-            if not mem_key:
-                continue
+            
 
-            feed = Feed(
-                source_id=row.get('id') or '',
-                source_type=1,
-                message=row.get('message') or '',
-                full_picture=row.get('full_picture') or '',
-                created_time=datetime.datetime.strptime(row.get('created_time') or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000'),
-                updated_time=datetime.datetime.strptime(row.get('updated_time') or '1979-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000'),
-                link=row.get('link') or '',
-                member = mem_key
-             )
+            feed = Feed.query(Feed.source_id == row.get('source_id')).get();
+            
+            is_need_tag_sync = False
+
+            if feed:
+                
+                if feed.message != row.get('message'):
+                    is_need_tag_sync = True
+
+                feed.message=row.get('message') or '',
+                feed.full_picture=row.get('full_picture') or '',
+                feed.updated_time=datetime.datetime.strptime(row.get('updated_time') or '1979-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000'),
+                feed.link=row.get('link') or ''
+
+            else:
+                fro_m = row.get('from')
+                mem = Member.query(Member.source_id == fro_m['id']).get()
+                if(mem):
+                    mem_key = mem.key
+                else:
+                    mem = Member()
+                    mem.type = 1
+                    mem.name = fro_m['name']
+                    mem.source_id = fro_m['id']
+                    mem.source_type = 1
+                    mem_key = mem.put();
+                if not mem_key:
+                    continue
+
+                feed = Feed(
+                    source_id=row.get('id') or '',
+                    source_type=1,
+                    message=row.get('message') or '',
+                    full_picture=row.get('full_picture') or '',
+                    created_time=datetime.datetime.strptime(row.get('created_time') or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000'),
+                    updated_time=datetime.datetime.strptime(row.get('updated_time') or '1979-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000'),
+                    link=row.get('link') or '',
+                    member = mem_key
+                )
+                is_need_tag_sync = True 
+            
 
             feedKey = feed.put()
-            p = re.compile(ur'#.+?(?=\s|$)')
-            tags = re.findall(p, row.get('message') or '')
-            for tag in tags:
-                tag = tag.lower()[1:]
-                tagRef = Tag.query(Tag.name == tag).get()
-                if tagRef:
-                    tagKey = tagRef.key
-                else:
-                    tagKey = Tag(name=tag, official=False).put()
-                trRef = TagRelation()
-                trRef.tag = tagKey
-                trRef.feed = feedKey
-                trRef.created_time = datetime.datetime.strptime(row['created_time'],'%Y-%m-%dT%H:%M:%S+0000')
-                trRef.put()
-            max_created_time = max(max_created_time, entry_created_time)
-        max_created_time = max_created_time.strftime('%Y-%m-%dT%H:%M:%S+0000')
+            
+            if is_need_tag_sync :
+                p = re.compile(ur'#.+?(?=\s|$)')
+                tags = re.findall(p, row.get('message') or '')
+                for tag in tags:
+                    tag = tag.lower()[1:]
+                    tagRef = Tag.query(Tag.name == tag).get()
+                    if tagRef:
+                        tagKey = tagRef.key
+                    else:
+                        tagKey = Tag(name=tag, official=False).put()
+                    trRef = TagRelation()
+                    trRef.tag = tagKey
+                    trRef.feed = feedKey
+                    trRef.created_time = datetime.datetime.strptime(row['created_time'],'%Y-%m-%dT%H:%M:%S+0000')
+                    trRef.put()
+            last_synced_time = max(last_synced_time, entry_updated_time)
+
+            syncComment(feed)
+        last_synced_time = last_synced_time.strftime('%Y-%m-%dT%H:%M:%S+0000')
 
 
         if config:
-            config.value = max_created_time
+            config.value = last_synced_time
             config.put()
         else:
-            Config(key='last_synced_time', value=max_created_time).put()
+            Config(key='last_synced_time', value=last_synced_time).put()
         self.response.write(NewsFeedMessage + '<hr >')
 
 class syncFeedHandler(BaseHandler):
     def get(self):
         from datetime import datetime, timedelta, date
         import time
-        entries, next_curs, more = Feed.query(Feed.created_time < (datetime.today() - timedelta(days=1))).order(-Feed.created_time).fetch_page(SYNC_FEED_YESTERDAY_PAGE);
+        entries, next_curs, more = Feed.query(Feed.created_time < (datetime.today() - timedelta(days=1))).order(-Feed.created_time).fetch_page(SYNC_FEED_YESTERDAY_PAGE_SCALE);
         for entry in entries:
             syncComment(entry)
             time.sleep(1)
@@ -239,11 +261,12 @@ def syncComment(_post):
         created_time = datetime.datetime.strptime(com['created_time'] or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000')
         if _post.last_comment_sync_time and created_time <= _post.last_comment_sync_time:
             continue
+        
+        
         comObj = Comment()
         comObj.source_id = com['id']
         comObj.source_type = 1
         comObj.message = com['message']
-        logging.info(comObj.message)
         comObj.created_time = created_time
         comObj.parent = _post.key
         mem = Member.query(Member.source_id == com['from']['id']).get()
@@ -300,7 +323,6 @@ class PostHandler(BaseHandler):
                 post = Feed.query(Feed.key ==  ndb.Key(urlsafe = post_key)).get()
                 syncComment(post)
                 next_cursor = Cursor(urlsafe=next_cursor)
-                logging.info(next_cursor)
                 entryRef, next_cursor, more = Comment.query(Comment.parent == post.key).order(Comment.created_time).fetch_page(100, start_cursor = next_cursor)
                 entries = []
                 for _entry in entryRef:
@@ -313,7 +335,6 @@ class PostHandler(BaseHandler):
                 args['post']['member'] = post.member.get().to_dict()
                 args['comments'] = {}
                 args['comments']['entries'] = entries;
-                logging.info(entries)
                 args['comments']['next_cursor'] = next_cursor.urlsafe() if next_cursor else None
                 args['comments']['more'] = more
                 if not memcache.add(ckey, args, CACEH_POST_IN_PERMLINK):
@@ -333,7 +354,7 @@ class CommentDataHandler(BaseHandler):
             cache = cdata
         else:
             post = Feed.query(Feed.key ==  ndb.Key(urlsafe = post_key)).get()
-            syncComment(post);
+            #syncComment(post);
             entryRef, next_cursor, more = Comment.query(Comment.parent == ndb.Key(urlsafe = post_key)).order(Comment.created_time).fetch_page(COMMEMT_PAGE_SCALE, start_cursor = next_cursor)
             for _entry in entryRef:
                 entry = _entry.to_dict()
