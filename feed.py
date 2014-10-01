@@ -69,7 +69,7 @@ from webapp2_extras import sessions
 from google.appengine.api import lib_config
 
 import logging
-
+logging.getLogger().setLevel(logging.DEBUG)
 
 # 템플릿 프레임워크 환경 설정
 JINJA_ENVIRONMENT = jinja2.Environment(
@@ -144,14 +144,9 @@ class LogoutHandler(BaseHandler):
 class GroupsGraphApiHandler(BaseHandler):
 
     def get(self):
-
+        logging.info('feed sync start >>>>>>>>>>>>>>>>>>>>>>>>');
         graph = Graph()
         content = graph.groups()
-        
-        previous = content["feed"]["paging"]["next"]
-        NewsFeed = content["feed"]
-
-        NewsFeedMessage = '<b>message</b>'
         config = Config.query(Config.key == 'last_synced_time').get()
         if config:
             last_synced_time = datetime.datetime.strptime(config.value,'%Y-%m-%dT%H:%M:%S+0000')
@@ -159,34 +154,37 @@ class GroupsGraphApiHandler(BaseHandler):
             last_synced_time = datetime.datetime.strptime('1979','%Y')
 
         for row in content["feed"]["data"]:
+            logging.info(('\t'*1)+'post sync start : source_id => '+row.get('id'));
             entry_updated_time = datetime.datetime.strptime(row.get('updated_time') or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000')
             if last_synced_time >= entry_updated_time:
+                logging.info(('\t'*2)+'post sync skip, checked');
                 continue
-
-            NewsFeedMessage += '<hr />' + (row.get('message') or '')
-            
-            
-
-            feed = Feed.query(Feed.source_id == row.get('source_id')).get();
-            
+            feed = Feed.query(Feed.source_id == row.get('id')).get();
+                
             is_need_tag_sync = False
 
             if feed:
-                
+                logging.info(('\t'*2)+'feed already exist : source_id => '+feed.source_id);
                 if feed.message != row.get('message'):
+                    logging.info('message is modified')
                     is_need_tag_sync = True
 
-                feed.message=row.get('message') or '',
-                feed.full_picture=row.get('full_picture') or '',
-                feed.updated_time=datetime.datetime.strptime(row.get('updated_time') or '1979-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000'),
+                logging.info(('\t'*3)+row.get('message')[:30])
+                
+                feed.message = row.get('message') or ''
+                feed.full_picture=row.get('full_picture') or ''
+                feed.updated_time=datetime.datetime.strptime(row.get('updated_time') or '1979-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000')
                 feed.link=row.get('link') or ''
 
             else:
+                logging.info(('\t'*2)+'make new post to db');
                 fro_m = row.get('from')
-                mem = Member.query(Member.source_id == fro_m['id']).get()
+                mem = Member.query(Member.source_id == fro_m['id']).get();
                 if(mem):
+                    logging.info(('\t'*3)+'member is exist');
                     mem_key = mem.key
                 else:
+                    logging.info(('\t'*3)+'make new member');
                     mem = Member()
                     mem.type = 1
                     mem.name = fro_m['name']
@@ -194,6 +192,7 @@ class GroupsGraphApiHandler(BaseHandler):
                     mem.source_type = 1
                     mem_key = mem.put();
                 if not mem_key:
+                    logging.info(('\t'*3)+'can\'t make new member so skip post sync');
                     continue
 
                 feed = Feed(
@@ -212,6 +211,7 @@ class GroupsGraphApiHandler(BaseHandler):
             feedKey = feed.put()
             
             if is_need_tag_sync :
+                logging.info(('\t'*3)+'sync tag')
                 p = re.compile(ur'#.+?(?=\s|$)')
                 tags = re.findall(p, row.get('message') or '')
                 for tag in tags:
@@ -226,18 +226,59 @@ class GroupsGraphApiHandler(BaseHandler):
                     trRef.feed = feedKey
                     trRef.created_time = datetime.datetime.strptime(row['created_time'],'%Y-%m-%dT%H:%M:%S+0000')
                     trRef.put()
-            last_synced_time = max(last_synced_time, entry_updated_time)
-
-            syncComment(feed)
-        last_synced_time = last_synced_time.strftime('%Y-%m-%dT%H:%M:%S+0000')
-
+            logging.info(('\t'*3)+'start sync comment')
+            self.syncComment(feed)
+            logging.info(('\t'*3)+'end sync comment')
+        last_synced_time = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S+0000')
 
         if config:
             config.value = last_synced_time
             config.put()
         else:
             Config(key='last_synced_time', value=last_synced_time).put()
-        self.response.write(NewsFeedMessage + '<hr >')
+        logging.info('feed sync end <<<<<<<<<<<<<<<<<<<<<<<<');
+    
+    def syncComment(self, _post):
+        import datetime;
+        graph = Graph()
+        post = graph.post(_post.source_id)
+        if 'comments' in post:
+            pass
+        else:
+            logging.info(('\t'*4)+'skip. There is no comment')
+            return True;
+        for com in post['comments']['data']:
+            logging.info(('\t'*5)+'start : comment.source_id => '+com['id'])
+            created_time = datetime.datetime.strptime(com['created_time'] or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000')
+            if _post.last_comment_sync_time and created_time <= _post.last_comment_sync_time:
+                logging.info(('\t'*5)+'skip sync. Already synced')
+                continue
+            comObj = Comment()
+            comObj.source_id = com['id']
+            comObj.source_type = 1
+            comObj.message = com['message']
+            comObj.created_time = created_time
+            comObj.parent = _post.key
+            mem = Member.query(Member.source_id == com['from']['id']).get()
+            if(mem):
+                logging.info(('\t'*5)+'member is existed : source_id => '+mem.source_id)
+                mem_key = mem.key
+            else:
+                mem = Member()
+                mem.name = com['from']['name']
+                mem.source_id = com['from']['id']
+                mem.source_type = 1
+                mem_key = mem.put();    
+                logging.info(('\t'*5)+'add member for comment : source_id => '+mem.source_id)
+            if not mem_key:
+                logging.info(('\t'*5)+'can\'t add member for comment')
+                continue
+            comObj.member = mem_key
+            comObj.put()
+            logging.info(('\t'*6)+'comment is added')
+        _post.last_comment_sync_time = datetime.datetime.now()
+        _post.put()
+        return True
 
 class syncFeedHandler(BaseHandler):
     def get(self):
@@ -248,43 +289,7 @@ class syncFeedHandler(BaseHandler):
             syncComment(entry)
             time.sleep(1)
         
-def syncComment(_post):
-    import datetime;
-    graph = Graph()
-    post = graph.post(_post.source_id)
-    if 'comments' in post:
-        pass
-    else:
-        return True;
-    for com in post['comments']['data']:
-        #todo last_comment_sync_time에 따라서 동기화 할 것인지 여부를 판단한다.
-        created_time = datetime.datetime.strptime(com['created_time'] or '1970-01-01T00:00:00+0000','%Y-%m-%dT%H:%M:%S+0000')
-        if _post.last_comment_sync_time and created_time <= _post.last_comment_sync_time:
-            continue
-        
-        
-        comObj = Comment()
-        comObj.source_id = com['id']
-        comObj.source_type = 1
-        comObj.message = com['message']
-        comObj.created_time = created_time
-        comObj.parent = _post.key
-        mem = Member.query(Member.source_id == com['from']['id']).get()
-        if(mem):
-            mem_key = mem.key
-        else:
-            mem = Member()
-            mem.name = com['from']['name']
-            mem.source_id = com['from']['id']
-            mem.source_type = 1
-            mem_key = mem.put();    
-        if not mem_key:
-            continue
-        comObj.member = mem_key
-        comObj.put()
-    _post.last_comment_sync_time = datetime.datetime.now()
-    _post.put()
-    return True
+
 
 class MemberHandler(BaseHandler):
     def get(self, type):
@@ -380,13 +385,13 @@ class AccessTokenHandler(BaseHandler):
 class TestHandler(BaseHandler):
 
     def get(self):
-        logging.info(ndb.Key(urlsafe='ahZkZXZ-dm9jYWwtdGVybWluYWwtNjY2chMLEgZNZW1iZXIYgICAgIDSgQgM'))
+        logging.debug(ndb.Key(urlsafe='ahZkZXZ-dm9jYWwtdGVybWluYWwtNjY2chMLEgZNZW1iZXIYgICAgIDSgQgM'))
         a = {'id':'egoing', 'local':'seoul'}
         
         if 'ida' in a:
-            logging.info(a['id'])
+            logging.debug(a['id'])
         else:
-            logging.info('test')
+            logging.debug('test')
         return
 
         graph = Graph()
