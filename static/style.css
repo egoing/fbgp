@@ -168,18 +168,3 @@
 .admin .after_textarea{
     .margin-top:8px;
 }
-
-#stalk_conversation{
-    height:600px !important;
-}
-
-.stalk_message_from .stalk_message_fg{
-    font-size:12px !important;
-}
-
-.stalk_message_from img{
-    width:20px !important;
-}
-.messages_from, .messages_to{
-    font-size:12px !important;
-}
