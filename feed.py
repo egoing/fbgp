@@ -326,7 +326,6 @@ class PostHandler(BaseHandler):
             else:
                 args['tags'] = self.tags()
                 post = Feed.query(Feed.key ==  ndb.Key(urlsafe = post_key)).get()
-                syncComment(post)
                 next_cursor = Cursor(urlsafe=next_cursor)
                 entryRef, next_cursor, more = Comment.query(Comment.parent == post.key).order(Comment.created_time).fetch_page(100, start_cursor = next_cursor)
                 entries = []
