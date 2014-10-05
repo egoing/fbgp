@@ -103,18 +103,24 @@ class FeedDataHandler(BaseHandler):
             if tag == None or tag == 'None' : 
                 feedRef, next_curs, more = Feed.query().order(-Feed.created_time).fetch_page(FEED_PAGE_SCALE, start_cursor = curs)
                 for feed in feedRef:
-                    feeds.append(feed.to_dict())
+                    _feed = feed.to_dict()
+                    _feed['comment_count'] = Comment.query(Comment.parent == feed.key).count()
+                    feeds.append(_feed)
             else:
                 tagRef = Tag.query(Tag.name == tag).get()
                 if tagRef:
                     trRef, next_curs, more = TagRelation.query(TagRelation.tag == tagRef.key).order(-TagRelation.created_time).fetch_page(FEED_PAGE_SCALE, start_cursor = curs)
                     for row in trRef:
                         feed = row.feed.get();
-                        feeds.append(feed.to_dict())
+                        _feed = feed.to_dict()
+                        _feed['comment_count'] = Comment.query(Comment.parent == feed.key).count()
+                        feeds.append(_feed)
             if not memcache.add(ckey, (feeds, next_curs, more), CACHE_POST_IN_HOME*1):
                 logging.error('Memcache set failed.')
         args = {}
         args['feeds'] = feeds;
+        #for x in feeds:
+        #   logging.info(x)
         args['cursor'] = more and next_curs and  next_curs.urlsafe();
         args['more'] = more;
         self.response.write(json.dumps(args))

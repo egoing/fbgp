@@ -51,10 +51,11 @@ $(document).ready(function(){
                         row_str += '<ul class="meta">'
                         row_str += '<li><a href="/member/post?member='+feed['member']['key_urlsafe']+'">'+feed['member']['name']+'</a></li>';
                         row_str += '<li><a href="/post/'+feed['key_urlsafe']+'">'+feed['created_time']+'</a></li>';
-                        row_str += '<li><a href="" class="comment_btn">댓글보기</a></li>';
+                        row_str += '<li><a href="" class="comment_btn">댓글보기 ('+feed['comment_count']+')</a></li>';
                         row_str += '</ul></div>';
                         row_str += '<div class="comment"><ul class="comment_data"></ul><button class="comment_more_btn btn btn-default btn-sm">더보기</button></div>';
                         row_str += '</li>';
+                        console.log(feed)
                     }
                     fl.append($(row_str))
                     if(!result.more)
@@ -70,6 +71,11 @@ $(document).ready(function(){
         load_feed();    
         $('body').on('click', '.comment_btn, .comment_more_btn', function(){
             $this = $(this)
+            if($this.data('opened'))
+                return false;
+            if($this.hasClass('comment_btn')){
+                $this.data('opened', true);
+            }
             $entry = $this.parents('.entry');
             $comment = $entry.find('.comment')
             $more = $entry.find('.comment_more_btn')
@@ -99,6 +105,7 @@ $(document).ready(function(){
                     $data.autolink();
                 }
             })
+            
             return false;  
         })
     } else if($('.admin').length>0){
