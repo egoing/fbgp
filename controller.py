@@ -15,15 +15,6 @@ from cookie import *
 from google.appengine.api import users
 
 
-_config = lib_config.register(
-    'main', {'FACEBOOK_ID': None, 'FACEBOOK_SECRET': None, 'FQL_ACCESS_TOKEN': None, 'GROUP_ID': None})
-
-# 페이스북 앱 정보
-
-FACEBOOK_APP_ID = _config.FACEBOOK_ID
-FACEBOOK_SECRET = _config.FACEBOOK_SECRET
-FQL_ACCESS_TOKEN = _config.FQL_ACCESS_TOKEN
-GROUP_ID = _config.GROUP_ID
 
 CACHE_POST_IN_HOME = 60*20;
 CACHE_COMMENT_IN_POST_TIME = 60*20
