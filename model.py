@@ -59,10 +59,12 @@ class Feed(ndb.Model):
     member = ndb.KeyProperty(kind=Member, required=True)
     
     def to_dict(self):
+        from pytz.gae import pytz
+        user_tz  = pytz.timezone('Asia/Seoul')
         obj = {}
         obj['message'] = self.message
-        obj['created_time'] = self.created_time.strftime(DATE_FORMAT);
-        obj['updated_time'] = self.updated_time.strftime(DATE_FORMAT);
+        obj['created_time'] = self.created_time.replace(tzinfo=pytz.utc).astimezone(user_tz).strftime(DATE_FORMAT);
+        obj['updated_time'] = self.created_time.replace(tzinfo=pytz.utc).astimezone(user_tz).strftime(DATE_FORMAT);
         obj['source_id'] = self.source_id
         obj['source_type'] = self.source_type
         obj['full_picture'] = self.full_picture
@@ -79,11 +81,13 @@ class Comment(ndb.Model):
     member = ndb.KeyProperty(kind=Member, required=True)
 
     def to_dict(self):
+        from pytz.gae import pytz
+        user_tz  = pytz.timezone('Asia/Seoul')
         obj = {}
         obj['source_id'] = self.source_id
         obj['source_type'] = self.source_type
         obj['message'] = self.message
-        obj['created_time'] = self.created_time.strftime(DATE_FORMAT);
+        obj['created_time'] = self.created_time.replace(tzinfo=pytz.utc).astimezone(user_tz).strftime(DATE_FORMAT);
         obj['parent'] = self.parent.urlsafe()
         obj['member'] = self.member.urlsafe()
         obj['key_urlsafe'] = self.key.urlsafe()
