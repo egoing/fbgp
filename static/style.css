@@ -29,9 +29,11 @@
 .home .entry{
     clear:both;
     display:inline-block ;
-    border-bottom: 1px solid #ccc;
-    padding:10px 0 10px 0;
+    border: 1px solid #ddd;
+    padding:20px 20px 0 20px;
+    margin:15px 0 15px 0;
     width:100%;
+    border-radius: 4px;
 }
 .home .entry .message:after {
     content:""; display:block; clear:both;
@@ -59,19 +61,20 @@
 
 .home .comment{
     margin-bottom:5px;
+    margin-top:15px;
     border-top:1px solid black;
     display:none;
     clear:both;
 }
 
 .home .comment .meta{
-    padding-top:5px;
+    padding-top:10px;
 }
 
 .home .comment li{
     border-bottom:1px solid #ccc;
-    padding:5px 0 5px 5px;
-    margin-left:10px;
+    padding:15px 0 15px 0;
+    word-break:break-all;
 }
 
 .home .comment li:last-child{
@@ -80,6 +83,7 @@
 
 .home .message {
     word-break:break-all;
+    margin-bottom:15px;
 }
 
 .home .comment_more_btn {
@@ -92,10 +96,6 @@
 }
 
 
-.home .comment_data li {
-    padding-top:5px;
-    font-size:0.9em
-}
 
 .home #next_btn{
     display: none;

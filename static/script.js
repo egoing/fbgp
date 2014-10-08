@@ -50,8 +50,9 @@ $(document).ready(function(){
                         row_str += message(feed['message']);
                         row_str += '<ul class="meta">'
                         row_str += '<li><a href="/member/post?member='+feed['member']['key_urlsafe']+'">'+feed['member']['name']+'</a></li>';
-                        row_str += '<li><a href="/post/'+feed['key_urlsafe']+'">'+feed['created_time']+'</a></li>';
-                        row_str += '<li><a href="" class="comment_btn">댓글보기 ('+feed['comment_count']+')</a></li>';
+                        row_str += '<li><a href="https://www.facebook.com/'+feed['source_id']+'" target="_blank">'+feed['created_time']+'</a></li>';
+                        row_str += '<li><a href="https://www.facebook.com/'+feed['source_id']+'" target="_blank">+</a></li>';
+                        row_str += '<li><a href="" class="comment_btn">댓글('+feed['comment_count']+')</a></li>';
                         row_str += '</ul></div>';
                         row_str += '<div class="comment"><ul class="comment_data"></ul><button class="comment_more_btn btn btn-default btn-sm">더보기</button></div>';
                         row_str += '</li>';
@@ -95,9 +96,10 @@ $(document).ready(function(){
                         str += '<li>'
                         str += result.entries[i].message
                         str += '<div class="meta">'
-                        str += '<span class="name"><a href="/member/comment?member='+result.entries[i].member.key_urlsafe+'">'+result.entries[i].member.name+'</a></span> | '
-                        str += '<span class="date">'+result.entries[i].created_time+'</span></li>'    
-                        str += '</div>'
+                        str += '<span class="name"><a href="/member/comment?member='+result.entries[i].member.key_urlsafe+'">'+result.entries[i].member.name+'</a></span> '
+                        str += '<span class="date">'+result.entries[i].created_time+'</span> '    
+                        str += '<span class="orignal"><a href="https://www.facebook.com/'+result.entries[i].source_id+'" target="_blank">+</a></span></li>'    
+                        str += '</div></li>'
                     }
                     if(result.next_cursor && result.more) {$more.show() } else {$more.hide() }
                     $comment.data('next_cursor', result.next_cursor)
