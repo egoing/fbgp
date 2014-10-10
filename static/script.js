@@ -56,7 +56,6 @@ $(document).ready(function(){
                         row_str += '</ul></div>';
                         row_str += '<div class="comment"><ul class="comment_data"></ul><button class="comment_more_btn btn btn-default btn-sm">더보기</button></div>';
                         row_str += '</li>';
-                        console.log(feed)
                     }
                     fl.append($(row_str))
                     if(!result.more)
@@ -66,10 +65,11 @@ $(document).ready(function(){
                 }
             })
         }
+        /*
         $('#next_btn').click(function(){
             load_feed($('#content').data('cursor'));
         })
-        load_feed();    
+        //load_feed();    
         $('body').on('click', '.comment_btn, .comment_more_btn', function(){
             $this = $(this)
             if($this.data('opened'))
@@ -110,6 +110,7 @@ $(document).ready(function(){
             
             return false;  
         })
+        */
     } else if($('.admin').length>0){
         $('#login_btn').click(function(){
             location.href = '/admin/login'
@@ -133,3 +134,41 @@ jQuery.fn.autolink = function (target) {
     });
 }
 
+var app = angular.module("app", []);
+app.config(function ($interpolateProvider) { $interpolateProvider.startSymbol('[['); $interpolateProvider.endSymbol(']]'); })
+app.controller("homeCtrl", function($scope, $http) {
+    $scope.feed = {}
+    $scope.feed.loading = false;
+    $scope.post = function(next_cursor){
+        $scope.feed.loading = true;
+        $http.get("/feeddata/"+(jQuery('#content').data('tag'))+"?cursor="+(next_cursor ? next_cursor : '')).success(function(response) {
+            if($scope.feed.posts){
+                $scope.feed.posts =  $scope.feed.posts.concat(response.feeds);
+            } else {
+                $scope.feed.posts = response.feeds;
+            }
+            $scope.feed.more = response.more;
+            $scope.feed.next_cursor = response.cursor;
+            $scope.feed.loading = false;
+        });
+    }
+    $scope.comment = function(post_key){
+        var target;
+        for(var name in $scope.feed.posts){
+            if($scope.feed.posts[name]['key_urlsafe'] == post_key) {
+                target = $scope.feed.posts[name];
+            }
+        }
+        if(target){
+            $http.get('/commentdata/'+post_key+(target.comment_next_cursor ? '?next_cursor=' + target.comment_next_cursor : '')).success(function(response) {
+                if(!target.comments)
+                    target.comments = [];
+                target.comment_more = response.more;
+                target.comment_next_cursor = response.next_cursor;
+                target.comments = target.comments.concat(response.entries);
+                //$scope.comments = response.feeds;
+            })    
+        }
+    }
+    $scope.post($scope.tag);
+})

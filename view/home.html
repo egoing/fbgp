@@ -1,4 +1,4 @@
-<div class="home" id="content" data-tag="{{tag}}">
+<div class="home" id="content" data-tag="{{tag}}" ng-app="app" ng-controller="homeCtrl">
 {% extends "/view/base.html" %}
 {% block content %}
 {% autoescape true %}
@@ -13,10 +13,40 @@
         </ul>
     </div>
     <div class="col-md-10 article">
-        <ul id="feed_list">
+        <ul id="feed_list"  ng-repeat="post in feed.posts">
+            <li class="entry" data-post_key="[[post.key_urlsafe]]">
+                <div class="message">
+                    [[post.message]]
+                    <ul class="meta">
+                        <li>
+                            <a href="/member/post?member=[[post.member.key_urlsafe]]">[[post.member.name]]</a>
+                        </li>
+                        <li>
+                            <a href="/post/[[post.source_id]]" target="_blank">[[post.created_time]]</a></li>
+                        <li>
+                            <a href="https://www.facebook.com/[[post.source_id]]" target="_blank">+</a></li>
+                        <li>
+                            <a href="" class="comment_btn" ng-click="comment([[post.key_urlsafe]])">댓글([[post.comment_count]])</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="comment" ng-show="post.comments.length > 0">
+                    <ul class="comment_data">
+                        <li ng-repeat="comment in post.comments">[[comment.message]]
+                            <div class="meta">
+                                <span class="name"><a href="/member/comment?member=[[comment.key_urlsafe]]">[[comment.name]]</a></span><span class="date">[[comment.created_time]]</span>
+                                <span class="orignal"><a href="https://www.facebook.com/[[comment.source_id]]" target="_blank">+</a></span>
+                            </div>
+                        </li>
+                    </ul>
+                    <button class="comment_more_btn btn btn-default btn-sm" ng-click="comment([[post.key_urlsafe]])" ng-show="post.comment_more">더보기</button>
+                </div>
+            </li>
         </ul>
         <!-- bind style.js -->
-        <input type="button" id="next_btn" value="next" class="btn btn-default btn-lg btn-block"/>
+        <button type="button" id="next_btn" class="btn btn-default btn-lg btn-block" ng-show="feed.more" ng-click="post(feed.next_cursor)">
+            <span class="[[feed.loading ? 'glyphicon glyphicon-refresh' : '']]"></span> [[feed.loading ? '' : '다음']]
+        </button>
 
     </div>
 </div>

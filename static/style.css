@@ -63,7 +63,6 @@
     margin-bottom:5px;
     margin-top:15px;
     border-top:1px solid black;
-    display:none;
     clear:both;
 }
 
@@ -87,18 +86,11 @@
 }
 
 .home .comment_more_btn {
-    display:none;
 }
 
 .home .comment_data {
     padding:0;
     list-style:none;
-}
-
-
-
-.home #next_btn{
-    display: none;
 }
 
 .home .article{
