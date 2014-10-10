@@ -73,7 +73,6 @@
 .home .comment li{
     border-bottom:1px solid #ccc;
     padding:15px 0 15px 0;
-    word-break:break-all;
 }
 
 .home .comment li:last-child{
@@ -83,6 +82,14 @@
 .home .message {
     word-break:break-all;
     margin-bottom:15px;
+}
+.message_text{
+    white-space: pre;
+    white-space: pre-wrap;       /* CSS 3 */
+    white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+    white-space: -pre-wrap;      /* Opera 4-6 */
+    white-space: -o-pre-wrap;    /* Opera 7 */
+    word-wrap: break-word;       /* Internet Explorer 5.5+ */
 }
 
 .home .comment_more_btn {
@@ -159,4 +166,29 @@
 
 .admin .after_textarea{
     .margin-top:8px;
+}
+
+
+#modal .entries {
+    padding:5px;
+}
+
+#modal .entries li{
+    list-style:none;
+    white-space: pre;
+    white-space: pre-wrap;       /* CSS 3 */
+    white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+    white-space: -pre-wrap;      /* Opera 4-6 */
+    white-space: -o-pre-wrap;    /* Opera 7 */
+    word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+
+#modal .entries li {
+    border-bottom:1px solid #ddd;
+    margin:10px;
+    padding:10px;
+}
+
+#modal .entries li:last-child{
+    border-bottom:none;
 }

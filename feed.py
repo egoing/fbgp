@@ -320,6 +320,28 @@ class MemberHandler(BaseHandler):
         template = JINJA_ENVIRONMENT.get_template('/view/member.html')
         self.response.write(template.render(args))
 
+class MemberAjaxHandler(BaseHandler):
+    def get(self, type):
+        from google.appengine.datastore.datastore_query import Cursor
+        import json
+        args = {}
+        curs = Cursor(urlsafe=self.request.get('cursor'))
+        member_key = self.request.get('member')
+        entries = []
+        if type == 'post':
+            entryRef, next_curs, more = Feed.query(Feed.member == ndb.Key(urlsafe = member_key)).order(-Feed.created_time).fetch_page(20, start_cursor = curs)
+        else :
+            entryRef, next_curs, more = Comment.query(Comment.member == ndb.Key(urlsafe = member_key)).order(-Comment.created_time).fetch_page(20, start_cursor = curs)
+        for entry in entryRef:
+            entries.append(entry.to_dict())
+        args['entries'] = entries;
+        args['cursor'] = more and next_curs and  next_curs.urlsafe();
+        args['more'] = more;
+        args['member_key'] = member_key;
+        args['type'] = type;
+        self.response.write(json.dumps(args))
+
+
 class PostHandler(BaseHandler):
         def get(self, post_key):
             from google.appengine.datastore.datastore_query import Cursor
@@ -422,6 +444,7 @@ app = webapp2.WSGIApplication(
         ('/groups_api', GroupsGraphApiHandler),
         ('/post/(.+)', PostHandler),
         ('/member/(.+)', MemberHandler),
+        ('/member_ajax/(.+)', MemberAjaxHandler),
         ('/refresh_token', AccessTokenHandler), 
         ('/commentdata/(.+)', CommentDataHandler),
         ('/sync_feed', syncFeedHandler),

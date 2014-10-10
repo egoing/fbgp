@@ -28,89 +28,8 @@ function message(string){
 // home.html
 $(document).ready(function(){
     if($('.home').length>0) {
-        function load_feed(next_cursor){
-            var content = $('#content');
-            var tag = content.data('tag');
-            var cursor = content.data('cursor');
-            var fl = $('#feed_list');
-            $.ajax({
-                url:'/feeddata/'+tag, 
-                dataType:'json',
-                type:'get',
-                data:{'cursor':(cursor ? cursor : '' )},
-                success:function(result){
-                    $('#next_btn').show().blur();
-                    var row_str = '';
-                    var row = [];
-                    for(var i = 0 ; i < result.feeds.length ; i++){
-                        var feed = result.feeds[i];
-                        row_str +=  '<li class="entry" data-post_key="'+feed['key_urlsafe']+'">'
-                        row_str += '<div class="message">';
-                        row_str += feed['full_picture'] ? '<div class="picture"><img src="'+feed['full_picture']+'" /></div>' : '';
-                        row_str += message(feed['message']);
-                        row_str += '<ul class="meta">'
-                        row_str += '<li><a href="/member/post?member='+feed['member']['key_urlsafe']+'">'+feed['member']['name']+'</a></li>';
-                        row_str += '<li><a href="https://www.facebook.com/'+feed['source_id']+'" target="_blank">'+feed['created_time']+'</a></li>';
-                        row_str += '<li><a href="https://www.facebook.com/'+feed['source_id']+'" target="_blank">+</a></li>';
-                        row_str += '<li><a href="" class="comment_btn">댓글('+feed['comment_count']+')</a></li>';
-                        row_str += '</ul></div>';
-                        row_str += '<div class="comment"><ul class="comment_data"></ul><button class="comment_more_btn btn btn-default btn-sm">더보기</button></div>';
-                        row_str += '</li>';
-                    }
-                    fl.append($(row_str))
-                    if(!result.more)
-                        $('#next_btn').prop('disabled', true);
-                    fl.autolink();
-                    content.data('cursor', result.cursor);
-                }
-            })
-        }
-        /*
-        $('#next_btn').click(function(){
-            load_feed($('#content').data('cursor'));
-        })
-        //load_feed();    
-        $('body').on('click', '.comment_btn, .comment_more_btn', function(){
-            $this = $(this)
-            if($this.data('opened'))
-                return false;
-            if($this.hasClass('comment_btn')){
-                $this.data('opened', true);
-            }
-            $entry = $this.parents('.entry');
-            $comment = $entry.find('.comment')
-            $more = $entry.find('.comment_more_btn')
-            $data = $entry.find('.comment_data')
-            $this.blur()
-            $.ajax({
-                url:/commentdata/+$entry.data('post_key'),
-                dataType:'json',
-                type:'get',
-                data:{next_cursor:$comment.data('next_cursor')},
-                success:function(result){
-                    if(Math.max($data.find('li').length, result.entries.length)>0){
-                        $comment.show();
-                    }
-                    str = ''
-                    for(var i=0; i<result.entries.length; i++){
-                        str += '<li>'
-                        str += result.entries[i].message
-                        str += '<div class="meta">'
-                        str += '<span class="name"><a href="/member/comment?member='+result.entries[i].member.key_urlsafe+'">'+result.entries[i].member.name+'</a></span> '
-                        str += '<span class="date">'+result.entries[i].created_time+'</span> '    
-                        str += '<span class="orignal"><a href="https://www.facebook.com/'+result.entries[i].source_id+'" target="_blank">+</a></span></li>'    
-                        str += '</div></li>'
-                    }
-                    if(result.next_cursor && result.more) {$more.show() } else {$more.hide() }
-                    $comment.data('next_cursor', result.next_cursor)
-                    $data.append(str)
-                    $data.autolink();
-                }
-            })
-            
-            return false;  
-        })
-        */
+        
+
     } else if($('.admin').length>0){
         $('#login_btn').click(function(){
             location.href = '/admin/login'
@@ -138,6 +57,13 @@ var app = angular.module("app", []);
 app.config(function ($interpolateProvider) { $interpolateProvider.startSymbol('[['); $interpolateProvider.endSymbol(']]'); })
 app.controller("homeCtrl", function($scope, $http) {
     $scope.feed = {}
+    $scope.active = {
+        member:{
+            key:'',
+            entries:[],
+            type:'post'
+        }
+    };
     $scope.feed.loading = false;
     $scope.post = function(next_cursor){
         $scope.feed.loading = true;
@@ -166,9 +92,25 @@ app.controller("homeCtrl", function($scope, $http) {
                 target.comment_more = response.more;
                 target.comment_next_cursor = response.next_cursor;
                 target.comments = target.comments.concat(response.entries);
-                //$scope.comments = response.feeds;
             })    
         }
+    }
+    $scope.member = function($event, type, member_key){
+        $http({
+            url:'/member_ajax/'+type,
+            method:'GET',
+            params: {member:member_key}
+        }).success(function(response) {
+            if($scope.active.member.key != member_key || $scope.active.member.type != type) {
+                $scope.active.member.entries = response.entries;
+            } else {
+                $scope.active.member.entries = $scope.active.member.entries.concat(response.entries);
+            }
+            $scope.active.member.key = member_key;
+            $scope.active.member.type = type;
+            jQuery('#modal').modal();
+        })
+        $event.preventDefault();
     }
     $scope.post($scope.tag);
 })
