@@ -61,7 +61,8 @@ app.controller("homeCtrl", function($scope, $http) {
         member:{
             key:'',
             entries:[],
-            type:'post'
+            type:'post',
+            name:''
         }
     };
     $scope.feed.loading = false;
@@ -111,6 +112,9 @@ app.controller("homeCtrl", function($scope, $http) {
             jQuery('#modal').modal();
         })
         $event.preventDefault();
+    }
+    $scope.showMemberPostInComment = function($event, type, member_key){
+        
     }
     $scope.post($scope.tag);
 })

@@ -17,6 +17,7 @@
             <li class="entry" data-post_key="[[post.key_urlsafe]]">
                 <div class="message">
                     <p class="message_text">[[post.message]]</p>
+                    <p class="link"><a class="embedly-card" href="[[post.link]]" ng-show="post.link" >[[post.link]]</a></p>
                     <ul class="meta">
                         <li>
                             <a href="/member/post?member=[[post.member.key_urlsafe]]" ng-click="member($event, 'post', post.member.key_urlsafe)">[[post.member.name]]</a>
@@ -34,7 +35,7 @@
                     <ul class="comment_data">
                         <li ng-repeat="comment in post.comments">[[comment.message]]
                             <div class="meta">
-                                <span class="name"><a href="/member/comment?member=[[comment.key_urlsafe]]" ng-click="comment([[comment.member.key_urlsafe]])">[[comment.member.name]]</a>
+                                <span class="name"><a href="" ng-click="member($event, 'comment', [[comment.member.key_urlsafe]])">[[comment.member.name]]</a>
                                 </span><span class="date">[[comment.created_time]]</span>
                                 <span class="orignal"><a href="https://www.facebook.com/[[comment.source_id]]" target="_blank">+</a></span>
                             </div>

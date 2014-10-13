@@ -57,6 +57,7 @@
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
      <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.0/angular.min.js"></script>
+     <script async src="//cdn.embedly.com/widgets/platform.js" charset="UTF-8"></script>
     <script src="/static/script.js"></script>
     <!-- Modal -->
     <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -69,12 +70,26 @@
           </div>
           -->
           <div class="modal-body">
+            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
             <ul class="nav nav-tabs" role="tablist">
                 <li class="[[active.member.type == 'post' ? 'active' : '']]"><a href="" ng-click="member($event, 'post', active.member.key)">게시글</a></li>
                 <li class="[[active.member.type == 'comment' ? 'active' : '']]"><a href="" ng-click="member($event, 'comment', active.member.key)">댓글</a></li>
             </ul>
             <ul class="entries">
-              <li ng-repeat="entry in active.member.entries">[[entry.message]]</li>
+              <li ng-repeat="entry in active.member.entries" class="[[active.member.type]]">
+                <div class="post_message">
+                  [[entry.parent.message]]
+                  <div class="meta">
+                    <span class="date">[[entry.parent.created_time]]</span>
+                    <span class="date">[[entry.parent.member.name]]</span>
+                  </div>
+                </div>
+                <div class="message">[[entry.message]]
+                  <div class="meta">
+                    <span class="date">[[entry.created_time]]</span>
+                  </div>
+                </div>
+               </li>
             </ul>
           </div>
           <div class="modal-footer">

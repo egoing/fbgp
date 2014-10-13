@@ -68,6 +68,7 @@ class Feed(ndb.Model):
         obj['source_id'] = self.source_id
         obj['source_type'] = self.source_type
         obj['full_picture'] = self.full_picture
+        obj['link'] = self.link
         obj['member'] = self.member.get().to_dict()
         obj['key_urlsafe'] = self.key.urlsafe()
         return obj;

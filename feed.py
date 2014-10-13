@@ -175,7 +175,8 @@ class GroupsGraphApiHandler(BaseHandler):
                     logging.info('message is modified')
                     is_need_tag_sync = True
 
-                logging.info(('\t'*3)+row.get('message')[:30])
+                if row.get('message'):
+                    logging.info(('\t'*3)+row.get('message')[:30])
                 
                 feed.message = row.get('message') or ''
                 feed.full_picture=row.get('full_picture') or ''
@@ -333,7 +334,11 @@ class MemberAjaxHandler(BaseHandler):
         else :
             entryRef, next_curs, more = Comment.query(Comment.member == ndb.Key(urlsafe = member_key)).order(-Comment.created_time).fetch_page(20, start_cursor = curs)
         for entry in entryRef:
-            entries.append(entry.to_dict())
+            _entry = entry.to_dict();
+            if type == 'comment':
+                parent = ndb.Key(urlsafe = _entry['parent']);
+                _entry['parent'] =  parent.get().to_dict();
+            entries.append(_entry)
         args['entries'] = entries;
         args['cursor'] = more and next_curs and  next_curs.urlsafe();
         args['more'] = more;
