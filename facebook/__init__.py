@@ -139,7 +139,7 @@ class Graph(object):
                 User.query().get().access_token)
         return self.callFacebookAPI(graphApi)
 
-        # 에러 처리
+        # 에러 처리     
         if "error" in content:
             if content["error"]["code"] == 613:
                 time.sleep(200)

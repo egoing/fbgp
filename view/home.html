@@ -3,16 +3,7 @@
 {% block content %}
 {% autoescape true %}
 <div class="row">
-    <div class="col-md-2">
-        <ul class="nav nav-pills nav-stacked  hidden-xs">
-            <li><a href="/admin">관리자</a></li>
-            <li><a href="/">전체</a>
-        {% for tag in tags %}
-            <li><a href="/feed/{{tag.name}}">{{tag.name}}</a></li>    
-        {% endfor%}
-        </ul>
-    </div>
-    <div class="col-md-10 article">
+    <div class="col-md-12 article">
         <ul id="feed_list"  ng-repeat="post in feed.posts">
             <li class="entry" data-post_key="[[post.key_urlsafe]]">
                 <div class="message">
