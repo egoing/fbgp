@@ -97,10 +97,13 @@ app.controller("homeCtrl", function($scope, $http) {
         }
     }
     $scope.member = function($event, type, member_key){
+        param = {member:member_key};
+        if($scope.active.next_cursor)
+            param['next_cursor'] = $scope.active.next_cursor;
         $http({
             url:'/member_ajax/'+type,
             method:'GET',
-            params: {member:member_key}
+            params: param
         }).success(function(response) {
             if($scope.active.member.key != member_key || $scope.active.member.type != type) {
                 $scope.active.member.entries = response.entries;
@@ -109,6 +112,8 @@ app.controller("homeCtrl", function($scope, $http) {
             }
             $scope.active.member.key = member_key;
             $scope.active.member.type = type;
+            $scope.active.more = response.more;
+            $scope.active.next_cursor = response.next_cursor;
             jQuery('#modal').modal();
         })
         $event.preventDefault();

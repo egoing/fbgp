@@ -7,7 +7,7 @@
         <ul id="feed_list"  ng-repeat="post in feed.posts">
             <li class="entry" data-post_key="[[post.key_urlsafe]]">
                 <div class="message">
-                    <p class="message_text">[[post.message]]</p>
+                    <p class="message_text wordwrap">[[post.message]]</p>
                     <p class="link"><a class="embedly-card" href="[[post.link]]" ng-show="post.link" >[[post.link]]</a></p>
                     <ul class="meta">
                         <li>
@@ -24,7 +24,7 @@
                 </div>
                 <div class="comment" ng-show="post.comments.length > 0">
                     <ul class="comment_data">
-                        <li ng-repeat="comment in post.comments">[[comment.message]]
+                        <li ng-repeat="comment in post.comments"><div class="wordwrap">[[comment.message]]</div>
                             <div class="meta">
                                 <span class="name"><a href="" ng-click="member($event, 'comment', [[comment.member.key_urlsafe]])">[[comment.member.name]]</a>
                                 </span><span class="date">[[comment.created_time]]</span>

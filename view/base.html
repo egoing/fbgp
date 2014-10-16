@@ -8,8 +8,8 @@
 
     <!-- Bootstrap -->
 
-    <link href="/static/twitterbootstrap/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/static/style.css" rel="stylesheet">
+        <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet">
+        <link href="/static/style.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -18,7 +18,6 @@
     <![endif]-->
   </head>
   <body>
-  <div class="visible-xs-block">visible-xs-block</div>
     <nav class="navbar navbar-default" role="navigation">
       <div class="container">
         <!-- Brand and toggle get grouped for better mobile display -->
@@ -89,19 +88,20 @@
             <ul class="entries">
               <li ng-repeat="entry in active.member.entries" class="[[active.member.type]]">
                 <div class="post_message">
-                  [[entry.parent.message]]
+                  <div class="wordwrap">[[entry.parent.message]]</div>
                   <div class="meta">
                     <span class="date">[[entry.parent.created_time]]</span>
                     <span class="date">[[entry.parent.member.name]]</span>
                   </div>
                 </div>
-                <div class="message">[[entry.message]]
+                <div class="message"><div class="wordwrap">[[entry.message]]</div>
                   <div class="meta">
                     <span class="date">[[entry.created_time]]</span>
                   </div>
                 </div>
                </li>
             </ul>
+            <button class="comment_more_btn btn btn-default btn-sm" ng-click="member($event, active.member.type, active.member.key)" ng-show="active.more">더보기</button>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>

@@ -326,13 +326,13 @@ class MemberAjaxHandler(BaseHandler):
         from google.appengine.datastore.datastore_query import Cursor
         import json
         args = {}
-        curs = Cursor(urlsafe=self.request.get('cursor'))
+        next_cursor = Cursor(urlsafe=self.request.get('next_cursor'))
         member_key = self.request.get('member')
         entries = []
         if type == 'post':
-            entryRef, next_curs, more = Feed.query(Feed.member == ndb.Key(urlsafe = member_key)).order(-Feed.created_time).fetch_page(20, start_cursor = curs)
+            entryRef, next_curs, more = Feed.query(Feed.member == ndb.Key(urlsafe = member_key)).order(-Feed.created_time).fetch_page(20, start_cursor = next_cursor)
         else :
-            entryRef, next_curs, more = Comment.query(Comment.member == ndb.Key(urlsafe = member_key)).order(-Comment.created_time).fetch_page(20, start_cursor = curs)
+            entryRef, next_curs, more = Comment.query(Comment.member == ndb.Key(urlsafe = member_key)).order(-Comment.created_time).fetch_page(20, start_cursor = next_cursor)
         for entry in entryRef:
             _entry = entry.to_dict();
             if type == 'comment':
@@ -340,7 +340,7 @@ class MemberAjaxHandler(BaseHandler):
                 _entry['parent'] =  parent.get().to_dict();
             entries.append(_entry)
         args['entries'] = entries;
-        args['cursor'] = more and next_curs and  next_curs.urlsafe();
+        args['next_cursor'] = more and next_curs and  next_curs.urlsafe();
         args['more'] = more;
         args['member_key'] = member_key;
         args['type'] = type;
